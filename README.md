@@ -9,7 +9,7 @@
 
 DataONE is an open source, community project. We [welcome contributions](./CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc. Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
 
-This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) PostgreSQL cluster. It can either deploy a working cluster with the default settings for test purposes (see ./values.yaml), or can make use of existing values overrides from your application chart, thus eliminating the need to maintain duplicate configurations.
+This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) PostgreSQL cluster. It can either deploy a working cluster with the default settings for test purposes (see [values.yaml](values.yaml)), or can make use of existing values overrides from your application chart, thus eliminating the need to maintain duplicate configurations.
 
 > [!CAUTION]
 > 1. DO NOT `helm uninstall` or `helm delete` this chart, unless you **_really_** need to! Doing so will result in the following:
@@ -45,11 +45,11 @@ helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <versi
              -f </path/to/your/values-overrides.yaml>
 ```
 
-Examples of values overrides can be found in the [examples directory](./examples), although typically, you could include these overrides in the same yaml file you use for your application's environment-specific values-overrides, so they are versioned together with your application config. See, for example, the [NCEAS/k8s-cluster-config repo](https://github.nceas.ucsb.edu/NCEAS/k8s-cluster-config).
+Examples of values overrides can be found in the [examples directory](./examples), although typically, you could include these overrides in the same yaml file you use for your application's environment-specific values-overrides, so they are versioned together with your application config.
 
 ## Secrets & Credentials
 
-Leaving the value `cnpg.existingSecret` blank will automatically create a Secret file containing the username defined in `cnpg.dbUser`, and will generate a secure password. You can then point your application to that Secret to retrieve the credentials. The name of the Secret will be `<releasename>-cnpg-app`.
+Leaving the value `cnpg.existingSecret` blank will automatically create a K8s Secret containing the username defined in `cnpg.dbUser`, along with a secure, generated password. You can then point your application to that Secret to retrieve the credentials. The name of the Secret will be `<releasename>-cnpg-app`.
 
 Alternatively, you can set `cnpg.existingSecret` to the name of a Secret that you created yourself.
 In that case, please note the following important requirements:
