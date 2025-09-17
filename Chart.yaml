@@ -1,0 +1,14 @@
+apiVersion: v2
+name: cnpg
+description: Helm chart to deploy a CloudNative PG PostgreSQL cluster on Kubernetes
+# OCI Annotations - see https://github.com/helm/helm/pull/11204
+sources:
+  - https://github.com/DataONEorg/dataone-cnpg
+
+# A chart can be either an 'application' or a 'library' chart.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0

@@ -1,0 +1,141 @@
+## Default values for creation of a CNPG cluster, and also for the PostgreSQL config usually found
+## in the following files:
+##   - postgresql.conf: main run-time configuration file of PostgreSQL
+##   - pg_hba.conf: clients authentication file
+##   - pg_ident.conf: map external users to internal users
+## See: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/
+##
+## Typically, you would override these parameters as necessary, in your own application's
+## environment-specific values-overrides yaml file, and then deploy the application using:
+##
+## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
+##                              -f </path/to/your/values-overrides.yaml>
+
+## @section Global Configuration Parameters
+global:
+  ## @param global.storageClass default name of the storageClass to use for Postgres PVs
+  ##
+  storageClass: csi-cephfs-sc
+
+## @section CloudNative PG Operator Configuration Parameters
+## The cnpg namespace is redundant here, but allows other charts to incorporate it into their own
+## values overrides
+##
+cnpg:
+  ## @param cnpg.instances Number of PostgreSQL instances required in the PG cluster.
+  ##
+  instances: 3
+
+  ## @param cnpg.existingSecret Provide a basic auth Secret, or leave blank to auto-create one
+  ## This is the name of the Basic Auth Secret holding the PostgreSQL database username and
+  ## password. Leave blank to auto-create a secret file with a generated secure password
+  ##
+  ## IMPORTANT:
+  ## 1. If you are providing your own Secret, then:
+  ##    - the Secret must contain the exact key names: 'username' and 'password'
+  ##    - the username must match the 'cnpg.dbUser' value below
+  ## 2. These credentials are used ONLY for initializing the database upon creation of the cluster.
+  ##    Changing the credentials in the secret and doing a 'helm upgrade' after the cluster has been
+  ##    created, will NOT update the credentials in the existing Postgres database!
+  ##
+  existingSecret: ""
+
+  ## @param cnpg.dbName The name of the database to create in the Postgres cluster.
+  ##
+  ## IMPORTANT:
+  ## This value is used ONLY for initializing the database upon creation of the cluster.
+  #  Changing the database name here and doing a 'helm upgrade' after the cluster has been
+  ## created, will NOT change the name of the database in an existing cluster!
+  ##
+  dbName: test
+
+  ## @param cnpg.dbUser DB owner/username. Leave blank to match the DB name (see `cnpg.dbName`)
+  ##
+  ## IMPORTANT:
+  ## 1. This value is used ONLY for initializing the database upon creation of the cluster.
+  ##    Changing the 'cnpg.dbUser' username here, and doing a 'helm upgrade' after the cluster has
+  ##    been created, will NOT update the credentials in the existing Postgres database!
+  ## 2. If you are providing your own Secret (see 'cnpg.existingSecret'), then the username in the
+  ##    secret must match this value.
+  ##
+  dbUser: ""
+
+  ## @param cnpg.resources Memory & CPU resource requests and limits for each PostgreSQL container.
+  ## For a PostgreSQL workload it is recommended to set a "Guaranteed" QoS. See the CNPG docs:
+  ## https://cloudnative-pg.io/documentation/1.20/resource_management/
+  ## For your cluster's pods to get assigned to the "Guaranteed" QoS class, you must set limits
+  ## and requests for both CPU and memory TO THE SAME VALUE!
+  ## Example (use your own values for 'cpu' and 'memory'):
+  ##     resources:
+  ##       requests:
+  ##         cpu: 1
+  ##         memory: 1Gi
+  ##       limits:
+  ##         cpu: 1
+  ##         memory: 1Gi
+  ##
+  resources: {}
+
+  ## Database File Storage settings
+  ## @param cnpg.persistence.storageClass Override, or leave blank to use `global.storageClass`
+  ## @param cnpg.persistence.size PVC Storage size request for postgres volumes
+  ##
+  persistence:
+    storageClass: ""
+    size: 1Gi
+
+  ## @section Optional PostgreSQL Configuration Parameters
+  ##
+  postgresql:
+    ## @param cnpg.postgresql.pg_hba Client authentication pg_hba.conf
+    ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-pg_hba-section and
+    ## https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html
+    ##
+    ## Example:
+    ## in Metacat, we override the default pg_hba.conf to allow password auth, like this:
+    ##  pg_hba:
+    ##    # TYPE        DATABASE      USER          ADDRESS         METHOD
+    ##    - host        metacat       metacat       0.0.0.0/0       password
+    ##    - host        metacat       metacat       ::0/0           password
+    ##    - host        all           postgres      0.0.0.0/0       password
+    ##    - host        all           postgres      ::0/0           password
+    pg_hba: []
+
+    ## @param cnpg.postgresql.pg_ident [default: see values.yaml] Override username mappings: pg_ident.conf
+    ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-pg_ident-section
+    ##      https://www.postgresql.org/docs/current/auth-username-maps.html
+    ##
+    ## Leaving this blank will automatically create the following mapping:
+    ##
+    ##  pg_ident:
+    ##    - local       postgres       <cnpg.dbUser>
+    ##
+    ## ...which allows the UNIX user 'postgres' (inside the container shell) to connect as the
+    ## database user defined in 'cnpg.dbUser' using peer authentication, with no password and no
+    ## hostname required. i.e. simply:
+    ##   $ psql -U <Username> [-d <database>  ## if db doesn't match username]
+    ##
+    ## NOTES:
+    ## - The user will only have the DB privileges of the 'cnpg.dbUser' user, not the 'postgres'
+    ##   superuser.
+    ## - The rule applies only for local (Unix domain socket) connections, from a shell inside the
+    ##   container.
+    ## - Remote access still requires authentication.
+    ##
+    pg_ident: []
+
+    ## Extended configuration, appended to defaults
+    ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-postgresql-section
+    ##
+    parameters:
+      ## @param cnpg.postgresql.parameters.max_connections override PG default 200 max DB connections.
+      ## 'max_connections' must exceed your application's max connections, since some of these
+      ## connections will be reserved for superuser
+      ##
+      max_connections: 250
+      ## @param cnpg.postgresql.parameters.shared_buffers memory for caching data (PG default: 128MB)
+      ## If you have a dedicated database server with 1GB or more of RAM, a reasonable starting
+      ## value for shared_buffers is 25% of the container memory. E.g: if shared_buffers=256MB, then
+      ## the recommended value for container memory size is 1 GB (see 'cnpg.resources')
+      ##
+      shared_buffers: 128MB

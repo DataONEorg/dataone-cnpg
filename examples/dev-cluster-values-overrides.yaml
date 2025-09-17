@@ -1,0 +1,32 @@
+## Example values overrides, for deploying Metacat's database on the NCEAS k8s cluster
+## (although typically, you could include these overrides in your application's environment-specific
+## values-overrides yaml file, so they are versioned together with your application, as we do in the
+## NCEAS/k8s-cluster-config repo -- https://github.nceas.ucsb.edu/NCEAS/k8s-cluster-config)
+##
+## How to deploy a cluster with this example file:
+##
+## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
+##                              -f ./examples/dev-cluster-values-overrides.yaml
+
+cnpg:
+  dbName: metacat
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+
+  persistence:
+    size: 10Gi
+
+  postgresql:
+    ## metacat override to allow password auth:
+    pg_hba:
+      # TYPE        DATABASE      USER          ADDRESS         METHOD
+      - host        metacat       metacat       0.0.0.0/0       password
+      - host        metacat       metacat       ::0/0           password
+      - host        all           postgres      0.0.0.0/0       password
+      - host        all           postgres      ::0/0           password
