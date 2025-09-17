@@ -7,6 +7,8 @@
 - Contact us: support@dataone.org
 - [DataONE discussions](https://github.com/DataONEorg/dataone/discussions)
 
+DataONE is an open source, community project. We [welcome contributions](./CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc. Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
+
 This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) PostgreSQL cluster. It can either deploy a working cluster with the default settings for test purposes (see ./values.yaml), or can make use of existing values overrides from your application chart, thus eliminating the need to maintain duplicate configurations.
 
 > [!CAUTION]
@@ -14,12 +16,11 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 >   * **the dynamically provisioned PVCs will be deleted!** (You won't lose the PVs or the data, but re-binding new PVCs to the existing data is non-trivial.)
 >   * (if you chose not to provide your own secret) **the secret containing the auto-generated password will be deleted**. Make sure you save the password somewhere safe before you uninstall/delete the chart:
 >     ```shell
->     releasename=<your_release_name>
->     kubectl get secret -o yaml ${releasename}-cnpg-app > ${releasename}-cnpg-app-secrets.yaml`
+>     release=<your_release_name>
+>     kubectl get secret -o yaml ${release}-cnpg-app > ${release}-cnpg-app-secrets.yaml
 >     ```
-> 2. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the postrgesql database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
+> 2. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
 
-DataONE is an open source, community project. We [welcome contributions](./CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc. Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
 
 ## Prerequisites
 
@@ -29,7 +30,7 @@ DataONE is an open source, community project. We [welcome contributions](./CONTR
 
 ## Quick Start
 
-To deploy a PostgreSQL cluster with the default settings (see ./values.yaml), and a secure password:
+To deploy a PostgreSQL cluster with the default settings (see [values.yaml](values.yaml)), and a secure password:
 
 ```shell
 helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version>
@@ -44,17 +45,20 @@ helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <versi
              -f </path/to/your/values-overrides.yaml>
 ```
 
+Examples of values overrides can be found in the [examples directory](./examples), although typically, you could include these overrides in the same yaml file you use for your application's environment-specific values-overrides, so they are versioned together with your application config. See, for example, the [NCEAS/k8s-cluster-config repo](https://github.nceas.ucsb.edu/NCEAS/k8s-cluster-config).
+
 ## Secrets & Credentials
 
-Leaving the value `cnpg.existingSecret` blank will automatically create a Secret file containing the username defined in `cnpg.dbUser`, and will generate a secure password. You can then point your application to that secret to retrieve the credentials. The name of the secret will be `<releasename>-cnpg-app`.
+Leaving the value `cnpg.existingSecret` blank will automatically create a Secret file containing the username defined in `cnpg.dbUser`, and will generate a secure password. You can then point your application to that Secret to retrieve the credentials. The name of the Secret will be `<releasename>-cnpg-app`.
 
-Alternatively, you can set `cnpg.existingSecret` to the name of your own secret.
+Alternatively, you can set `cnpg.existingSecret` to the name of a Secret that you created yourself.
 In that case, please note the following important requirements:
-- the Secret must contain the exact key names: `username` and `password`
+- the secret must be of type [`kubernetes.io/basic-auth`](https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret) 
+- It must contain the exact key names: `username` and `password`
 - the username must match the value of `cnpg.dbUser`
 
 > [!CAUTION]
-> Take care to ensure you have provided the correct credentials in the secret, along with `cnpg.dbUser` and `cnpg.dbName`, before you create the cluster. These values are used ONLY for initializing the database upon creation of the cluster. Changing the credentials in the secret, and doing a 'helm upgrade' after the cluster has been created, will NOT update the credentials in the existing Postgres database!
+> Make sure you have provided the correct credentials in the secret, along with `cnpg.dbUser` and `cnpg.dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
 ## Development
 
