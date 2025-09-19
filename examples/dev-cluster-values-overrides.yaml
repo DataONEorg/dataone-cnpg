@@ -1,16 +1,17 @@
 ## Example values overrides, for deploying Metacat's database on the NCEAS k8s cluster
-## (although typically, you could include these overrides in your application's environment-specific
-## values-overrides yaml file, so they are versioned together with your application, as we do in the
-## NCEAS/k8s-cluster-config repo -- https://github.nceas.ucsb.edu/NCEAS/k8s-cluster-config)
+## Typically, you would keep these overrides alongside your application's environment-specific
+## values-overrides yaml file, so they are versioned together, as we do in the
+## NCEAS/k8s-cluster-config repo -- https://github.nceas.ucsb.edu/NCEAS/k8s-cluster-config
 ##
 ## How to deploy a cluster with this example file:
 ##
 ## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f ./examples/dev-cluster-values-overrides.yaml
 
-cnpg:
+database:
   dbName: metacat
 
+cnpg:
   resources:
     requests:
       cpu: 1

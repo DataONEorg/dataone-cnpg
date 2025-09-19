@@ -11,36 +11,24 @@
 ## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f </path/to/your/values-overrides.yaml>
 
-## @section Global Configuration Parameters
-global:
-  ## @param global.storageClass default name of the storageClass to use for Postgres PVs
-  ##
-  storageClass: csi-cephfs-sc
-
-## @section CloudNative PG Operator Configuration Parameters
-## The cnpg namespace is redundant here, but allows other charts to incorporate it into their own
-## values overrides
+## @section General Database Connection Parameters
 ##
-cnpg:
-  ## @param cnpg.instances Number of PostgreSQL instances required in the PG cluster.
-  ##
-  instances: 3
-
-  ## @param cnpg.existingSecret Provide a basic auth Secret, or leave blank to auto-create one
+database:
+  ## @param database.existingSecret Provide a basic auth Secret, or leave blank to auto-create one
   ## This is the name of the Basic Auth Secret holding the PostgreSQL database username and
   ## password. Leave blank to auto-create a secret file with a generated secure password
   ##
   ## IMPORTANT:
   ## 1. If you are providing your own Secret, then:
   ##    - the Secret must contain the exact key names: 'username' and 'password'
-  ##    - the username must match the 'cnpg.dbUser' value below
+  ##    - the username must match the 'database.dbUser' value below
   ## 2. These credentials are used ONLY for initializing the database upon creation of the cluster.
   ##    Changing the credentials in the secret and doing a 'helm upgrade' after the cluster has been
   ##    created, will NOT update the credentials in the existing Postgres database!
   ##
   existingSecret: ""
 
-  ## @param cnpg.dbName The name of the database to create in the Postgres cluster.
+  ## @param database.dbName The name of the database to create in the Postgres cluster.
   ##
   ## IMPORTANT:
   ## This value is used ONLY for initializing the database upon creation of the cluster.
@@ -49,16 +37,25 @@ cnpg:
   ##
   dbName: test
 
-  ## @param cnpg.dbUser DB owner/username. Leave blank to match the DB name (see `cnpg.dbName`)
+  ## @param database.dbUser DB owner/username. Leave blank to match the DB name (`database.dbName`)
   ##
   ## IMPORTANT:
   ## 1. This value is used ONLY for initializing the database upon creation of the cluster.
-  ##    Changing the 'cnpg.dbUser' username here, and doing a 'helm upgrade' after the cluster has
-  ##    been created, will NOT update the credentials in the existing Postgres database!
-  ## 2. If you are providing your own Secret (see 'cnpg.existingSecret'), then the username in the
-  ##    secret must match this value.
+  ##    Changing the 'database.dbUser' username here, and doing a 'helm upgrade' after the cluster
+  ##    has been created, will NOT update the credentials in the existing Postgres database!
+  ## 2. If you are providing your own Secret (see 'database.existingSecret'), then the username in
+  ##    the secret must match this value.
   ##
   dbUser: ""
+
+## @section CloudNative PG Operator Configuration Parameters
+## The `cnpg` key may seem redundant for this chart, but it groups related settings, allowing other
+## charts to reference and override these values in their own Helm configurations.
+##
+cnpg:
+  ## @param cnpg.instances Number of PostgreSQL instances required in the PG cluster.
+  ##
+  instances: 3
 
   ## @param cnpg.resources Memory & CPU resource requests and limits for each PostgreSQL container.
   ## For a PostgreSQL workload it is recommended to set a "Guaranteed" QoS. See the CNPG docs:
@@ -77,11 +74,11 @@ cnpg:
   resources: {}
 
   ## Database File Storage settings
-  ## @param cnpg.persistence.storageClass Override, or leave blank to use `global.storageClass`
-  ## @param cnpg.persistence.size PVC Storage size request for postgres volumes
+  ## @param cnpg.persistence.storageClass PV StorafeClass for postgres volumes
+  ## @param cnpg.persistence.size PV Storage size request for postgres volumes
   ##
   persistence:
-    storageClass: ""
+    storageClass: csi-cephfs-sc
     size: 1Gi
 
   ## @section Optional PostgreSQL Configuration Parameters
@@ -101,22 +98,22 @@ cnpg:
     ##    - host        all           postgres      ::0/0           password
     pg_hba: []
 
-    ## @param cnpg.postgresql.pg_ident [default: see values.yaml] Override username mappings: pg_ident.conf
+    ## @param cnpg.postgresql.pg_ident [default: see values.yaml] Override `pg_ident.conf` mappings
     ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-pg_ident-section
     ##      https://www.postgresql.org/docs/current/auth-username-maps.html
     ##
     ## Leaving this blank will automatically create the following mapping:
     ##
     ##  pg_ident:
-    ##    - local       postgres       <cnpg.dbUser>
+    ##    - local       postgres       <database.dbUser>
     ##
     ## ...which allows the UNIX user 'postgres' (inside the container shell) to connect as the
-    ## database user defined in 'cnpg.dbUser' using peer authentication, with no password and no
+    ## database user defined in 'database.dbUser' using peer authentication, with no password and no
     ## hostname required. i.e. simply:
     ##   $ psql -U <Username> [-d <database>  ## if db doesn't match username]
     ##
     ## NOTES:
-    ## - The user will only have the DB privileges of the 'cnpg.dbUser' user, not the 'postgres'
+    ## - The user will only have the DB privileges of the 'database.dbUser' user, not the 'postgres'
     ##   superuser.
     ## - The rule applies only for local (Unix domain socket) connections, from a shell inside the
     ##   container.
