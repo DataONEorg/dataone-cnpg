@@ -45,20 +45,20 @@ helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <versi
              -f </path/to/your/values-overrides.yaml>
 ```
 
-Examples of values overrides can be found in the [examples directory](./examples).
+Examples of values overrides can be found in the [examples directory](./examples), although typically, you could include these overrides in the same yaml file you use for your application's environment-specific values-overrides, so they are versioned together with your application config.
 
 ## Secrets & Credentials
 
-Leaving the value `cnpg.existingSecret` blank will automatically create a K8s Secret containing the username defined in `database.dbUser`, along with a secure, generated password. You can then point your application to that Secret to retrieve the credentials. The name of the Secret will be `<releasename>-cnpg-app`.
+Leaving the value `cnpg.existingSecret` blank will automatically create a K8s Secret containing the username defined in `cnpg.dbUser`, along with a secure, generated password. You can then point your application to that Secret to retrieve the credentials. The name of the Secret will be `<releasename>-cnpg-app`.
 
-Alternatively, you can set `cnpg.existingSecret` to the name of a Secret that you created yourself. In that case, please note the following important requirements:
-- the secret must be of type [`kubernetes.io/basic-auth`](https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret)
+Alternatively, you can set `cnpg.existingSecret` to the name of a Secret that you created yourself.
+In that case, please note the following important requirements:
+- the secret must be of type [`kubernetes.io/basic-auth`](https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret) 
 - It must contain the exact key names: `username` and `password`
-- the username must match the value of `database.dbUser`
+- the username must match the value of `cnpg.dbUser`
 
 > [!CAUTION]
-> Make sure you have provided the correct credentials in the secret, along with `database.dbUser` 
-> and `database.dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
+> Make sure you have provided the correct credentials in the secret, along with `cnpg.dbUser` and `cnpg.dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
 ## Development
 
@@ -66,29 +66,30 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 ## Parameters
 
-### General Database Connection Parameters
+### Global Configuration Parameters
 
-| Name                      | Description                                                             | Value  |
-| ------------------------- | ----------------------------------------------------------------------- | ------ |
-| `database.existingSecret` | Provide a basic auth Secret, or leave blank to auto-create one          | `""`   |
-| `database.dbName`         | The name of the database to create in the Postgres cluster.             | `test` |
-| `database.dbUser`         | DB owner/username. Leave blank to match the DB name (`database.dbName`) | `""`   |
+| Name                  | Description                                              | Value           |
+| --------------------- | -------------------------------------------------------- | --------------- |
+| `global.storageClass` | default name of the storageClass to use for Postgres PVs | `csi-cephfs-sc` |
 
 ### CloudNative PG Operator Configuration Parameters
 
-| Name                            | Description                                                              | Value           |
-| ------------------------------- | ------------------------------------------------------------------------ | --------------- |
-| `cnpg.instances`                | Number of PostgreSQL instances required in the PG cluster.               | `3`             |
-| `cnpg.resources`                | Memory & CPU resource requests and limits for each PostgreSQL container. | `{}`            |
-| `cnpg.persistence.storageClass` | PV StorafeClass for postgres volumes                                     | `csi-cephfs-sc` |
-| `cnpg.persistence.size`         | PV Storage size request for postgres volumes                             | `1Gi`           |
+| Name                            | Description                                                              | Value  |
+| ------------------------------- | ------------------------------------------------------------------------ | ------ |
+| `cnpg.instances`                | Number of PostgreSQL instances required in the PG cluster.               | `3`    |
+| `cnpg.existingSecret`           | Provide a basic auth Secret, or leave blank to auto-create one           | `""`   |
+| `cnpg.dbName`                   | The name of the database to create in the Postgres cluster.              | `test` |
+| `cnpg.dbUser`                   | DB owner/username. Leave blank to match the DB name (see `cnpg.dbName`)  | `""`   |
+| `cnpg.resources`                | Memory & CPU resource requests and limits for each PostgreSQL container. | `{}`   |
+| `cnpg.persistence.storageClass` | Override, or leave blank to use `global.storageClass`                    | `""`   |
+| `cnpg.persistence.size`         | PVC Storage size request for postgres volumes                            | `1Gi`  |
 
 ### Optional PostgreSQL Configuration Parameters
 
 | Name                                         | Description                                 | Value             |
 | -------------------------------------------- | ------------------------------------------- | ----------------- |
 | `cnpg.postgresql.pg_hba`                     | Client authentication pg_hba.conf           | `[]`              |
-| `cnpg.postgresql.pg_ident`                   | Override `pg_ident.conf` mappings           | `see values.yaml` |
+| `cnpg.postgresql.pg_ident`                   | Override username mappings: pg_ident.conf   | `see values.yaml` |
 | `cnpg.postgresql.parameters.max_connections` | override PG default 200 max DB connections. | `250`             |
 | `cnpg.postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB) | `128MB`           |
 

@@ -10,10 +10,10 @@ spec:
   instances: {{ .Values.cnpg.instances | default 3 }}
   bootstrap:
     initdb:
-      database: {{ .Values.database.dbName }}
-      owner: {{ .Values.database.dbUser }}
+      database: {{ .Values.cnpg.dbName }}
+      owner: {{ .Values.cnpg.dbUser }}
       secret:
-        name: {{ .Values.database.existingSecret }}
+        name: {{ .Values.cnpg.existingSecret }}
       encoding: UTF8
       localeProvider: icu
       icuLocale: en_US
@@ -32,12 +32,12 @@ spec:
     {{- with .Values.cnpg.postgresql.pg_ident }}
       {{- toYaml . | nindent 6 }}
     {{- else }}
-      - local    postgres    {{ .Values.database.dbUser | default .Values.database.dbName }}
+      - local    postgres    {{ .Values.cnpg.dbUser | default .Values.cnpg.dbName }}
     {{- end }}
   {{- with .Values.cnpg.resources }}
   resources:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   storage:
-    storageClass: {{ .Values.cnpg.persistence.storageClass }}
+    storageClass: {{ .Values.cnpg.persistence.storageClass | default .Values.global.storageClass }}
     size: {{ .Values.cnpg.persistence.size }}
