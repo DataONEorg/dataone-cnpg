@@ -7,13 +7,13 @@ metadata:
   name: {{ .Release.Name }}-cnpg
   namespace: {{ .Release.Namespace }}
 spec:
-  instances: {{ .Values.cnpg.instances | default 3 }}
+  instances: {{ .Values.instances | default 3 }}
   bootstrap:
     initdb:
-      database: {{ .Values.cnpg.dbName }}
-      owner: {{ .Values.cnpg.dbUser }}
+      database: {{ .Values.dbName }}
+      owner: {{ .Values.dbUser }}
       secret:
-        name: {{ .Values.cnpg.existingSecret }}
+        name: {{ .Values.existingSecret }}
       encoding: UTF8
       localeProvider: icu
       icuLocale: en_US
@@ -21,23 +21,23 @@ spec:
       localeCollate: en_US.UTF-8
   postgresql:
     parameters:
-      {{- range $k, $v := .Values.cnpg.postgresql.parameters }}
+      {{- range $k, $v := .Values.postgresql.parameters }}
         {{ $k }}: {{ $v | toString | quote }}
       {{- end }}
-    {{- with .Values.cnpg.postgresql.pg_hba }}
+    {{- with .Values.postgresql.pg_hba }}
     pg_hba:
       {{- toYaml . | nindent 6 }}
     {{- end }}
     pg_ident:
-    {{- with .Values.cnpg.postgresql.pg_ident }}
+    {{- with .Values.postgresql.pg_ident }}
       {{- toYaml . | nindent 6 }}
     {{- else }}
-      - local    postgres    {{ .Values.cnpg.dbUser | default .Values.cnpg.dbName }}
+      - local    postgres    {{ .Values.dbUser | default .Values.dbName }}
     {{- end }}
-  {{- with .Values.cnpg.resources }}
+  {{- with .Values.resources }}
   resources:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   storage:
-    storageClass: {{ .Values.cnpg.persistence.storageClass | default .Values.global.storageClass }}
-    size: {{ .Values.cnpg.persistence.size }}
+    storageClass: {{ .Values.persistence.storageClass }}
+    size: {{ .Values.persistence.size }}
