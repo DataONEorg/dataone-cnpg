@@ -7,25 +7,25 @@
 ## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f ./examples/values-overrides-metacat-dev.yaml
 
-cnpg:
-  dbName: metacat
+dbName: metacat
+#dbUser: defaults to dbName if blank
 
-  resources:
-    requests:
-      cpu: 1
-      memory: 1Gi
-    limits:
-      cpu: 1
-      memory: 1Gi
+resources:
+  requests:
+    cpu: 1
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 1Gi
 
-  persistence:
-    size: 10Gi
+persistence:
+  size: 10Gi
 
-  postgresql:
-    ## metacat override to allow password auth:
-    pg_hba:
-      # TYPE        DATABASE      USER          ADDRESS         METHOD
-      - host        metacat       metacat       0.0.0.0/0       password
-      - host        metacat       metacat       ::0/0           password
-      - host        all           postgres      0.0.0.0/0       password
-      - host        all           postgres      ::0/0           password
+postgresql:
+  ## metacat override to allow password auth:
+  pg_hba:
+    # TYPE        DATABASE      USER          ADDRESS         METHOD
+    - host        metacat       metacat       0.0.0.0/0       password
+    - host        metacat       metacat       ::0/0           password
+    - host        all           postgres      0.0.0.0/0       password
+    - host        all           postgres      ::0/0           password
