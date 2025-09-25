@@ -18,6 +18,32 @@ resources:
     cpu: 1
     memory: 1Gi
 
+init:
+  method: "pg_basebackup"
+  pg_basebackup:
+    source: "source-db"
+    ## target database name and owner to create after cloning from the source
+    database: "metacat"
+    owner: "metacat"  # Defaults to the value of the pg_basebackup.database key.
+    ## Name of the secret containing the initial credentials for the owner of the user database. If
+    ## empty a new secret will be created from scratch
+    secret:
+      name: ""
+    ## Necessary if the source database was initialized with libc locale provider
+    localeProvider: libc
+
+  externalClusters:
+    - name: source-db
+      connectionParameters:
+        host: metacatbrooke-postgresql
+        user: metacat
+        dbname: metacat
+        sslmode: disable
+      password:
+        name: metacatbrooke-metacat-secrets
+        key: POSTGRES_PASSWORD
+
+
 persistence:
   size: 10Gi
 

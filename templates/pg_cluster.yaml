@@ -1,6 +1,10 @@
 ## Create a PostgreSQL cluster using the CloudNative-PG operator
 ## (https://github.com/cloudnative-pg/cloudnative-pg)
 ##
+{{ $validMethods := tuple "initdb" "pg_basebackup" }}
+{{- if not (has .Values.init.method $validMethods) }}
+{{ required ( printf ".Values.init.method must be one of %s" $validMethods ) "" | fail }}
+{{- end }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -9,6 +13,7 @@ metadata:
 spec:
   instances: {{ .Values.instances | default 3 }}
   bootstrap:
+    {{- if eq .Values.init.method "initdb" }}
     initdb:
       database: {{ .Values.dbName }}
       owner: {{ .Values.dbUser }}
@@ -19,6 +24,21 @@ spec:
       icuLocale: en_US
       localeCType: en_US.UTF-8
       localeCollate: en_US.UTF-8
+      {{- with .Values.init.import }}
+      import:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- if eq .Values.init.method "pg_basebackup" }}
+    {{- with .Values.init.pg_basebackup }}
+    pg_basebackup:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
+  {{- with .Values.init.externalClusters }}
+  externalClusters:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   postgresql:
     parameters:
       {{- range $k, $v := .Values.postgresql.parameters }}

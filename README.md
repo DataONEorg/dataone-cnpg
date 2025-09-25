@@ -30,20 +30,13 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 
 ## Quick Start
 
-To deploy a PostgreSQL cluster with the default settings (see [values.yaml](values.yaml)), and a secure password:
+To deploy an empty PostgreSQL cluster with the default settings (see [values.yaml](values.yaml)), and a secure password:
 
 ```shell
 helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version>
 ```
 
-## Usage
-
-To deploy with existing values overrides from your application chart, run:
-
-```shell
-helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version> \
-             -f </path/to/your/values-overrides.yaml>
-```
+To deploy with existing values overrides from your file, add `-f /path/to/your/values-overrides.yaml`
 
 Examples of values overrides can be found in the [examples directory](./examples).
 
@@ -58,6 +51,55 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 > [!CAUTION]
 > Make sure you have provided the correct credentials in the secret, along with `dbUser` and `dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
+
+## Importing Data
+
+Data can be imported from other PostgreSQL databases. The scenarios supported by this chart are:
+
+1. Streaming Replication (same major versions)
+   - Involves replication from an existing, binary-compatible PostgreSQL instance in the same cluster
+   - major versions must be EQUAL for the source cluster and the destination cluster
+2. Automated `pg_dump` and `pg_restore` import (works with mis-matched major versions) 
+   - import a database from an existing PostgreSQL cluster, even if located outside Kubernetes
+   - PostgreSQL major version for the source cluster must be LESS THAN OR EQUAL TO that of the destination cluster
+
+Each of these is discussed in more detail below:
+
+### 1. PostgreSQL major versions are EQUAL for the source cluster and the destination cluster
+
+This approach uses `pg_basebackup` to create a PostgreSQL cluster by cloning an existing (and binary-compatible) one of the same major version, through the streaming replication protocol. See the [CloudNative PG documentation](https://cloudnative-pg.io/documentation/current/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup), and particularly note the warnings and the Requirements section!
+
+Steps:
+
+1. Ensure that the source PostgreSQL cluster is configured to allow replication connections from the destination cluster. This typically requires:
+   1. modifying the `pg_hba.conf` file to include an entry that permits replication connections from the IP address or hostname of the new CNPG cluster; e.g.:
+
+      ```shell
+      # TYPE     DATABASE       USER        ADDRESS             METHOD
+      host       replication    metacat     192.168.0.0/32      md5
+      ```
+
+   2. In the Bitnami PostgreSQL pod, log into `psql` as the `postgres` admin user:
+       ```shell
+       $ psql -U postgres
+       psql (17.5)
+       Type "help" for help.
+       ```
+   
+       ...and do the following:
+
+       ```sql
+       -- grant `REPLICATION` privileges to the user defined in 'dbUser'
+       -- (e.g. for "metacat"):
+       ALTER ROLE metacat WITH REPLICATION;
+      
+       SELECT * FROM pg_create_physical_replication_slot('cnpg_slot');
+       ```
+
+### 2. PostgreSQL major version for the source cluster is LESS THAN OR EQUAL TO that of the destination cluster
+
+This approach uses `pg_restore` as part of the initial cluster creation, or it can be applied to an existing, empty cluster, using `pg_dump` and `pg_restore`. See the [CloudNative PG documentation](https://cloudnative-pg.io/documentation/current/database_import/) for more information.
+(Not yet implemented in this helm chart.)
 
 ## Development
 
