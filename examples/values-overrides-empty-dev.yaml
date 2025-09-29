@@ -1,0 +1,20 @@
+## Example values overrides, for deploying a new, empty database on the NCEAS k8s cluster
+##
+## How to deploy a cluster with this example file:
+##
+## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
+##                              -f ./examples/values-overrides-empty-dev.yaml
+
+dbName: myapp
+#dbUser: defaults to dbName if blank
+
+resources:
+  requests:
+    cpu: 1
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+persistence:
+  size: 10Gi

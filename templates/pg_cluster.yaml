@@ -35,6 +35,10 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
     {{- end }}
+  {{- with .Values.replica }}
+  replica:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- with .Values.init.externalClusters }}
   externalClusters:
     {{- toYaml . | nindent 4 }}

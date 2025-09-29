@@ -179,3 +179,8 @@ postgresql:
     ## the recommended value for container memory size is 1 GB (see 'resources')
     ##
     shared_buffers: 128MB
+
+
+replica:
+  enabled: false
+  source: "source-db"

@@ -1,4 +1,6 @@
-## Example values overrides, for deploying Metacat's database on the NCEAS k8s cluster
+## Example values overrides, for deploying Metacat's database on the NCEAS k8s cluster, and
+## initializing it by cloning from an existing Metacat database.
+##
 ## Typically, you would keep these overrides alongside your application's environment-specific
 ## values-overrides yaml file, so they are versioned together with your application.
 ##
@@ -25,10 +27,10 @@ init:
     ## target database name and owner to create after cloning from the source
     database: "metacat"
     owner: "metacat"  # Defaults to the value of the pg_basebackup.database key.
-    ## Name of the secret containing the initial credentials for the owner of the user database. If
-    ## empty a new secret will be created from scratch
+    ## Name of the secret containing the credentials for the owner of the user database that is
+    ## being copied from the source cluster
     secret:
-      name: ""
+      name: "metacatbrooke-metacat-cnpg"
     ## Necessary if the source database was initialized with libc locale provider
     localeProvider: libc
 
@@ -43,11 +45,18 @@ init:
         name: metacatbrooke-metacat-secrets
         key: POSTGRES_PASSWORD
 
-
 persistence:
   size: 10Gi
 
+replica:
+  enabled: true
+  source: "source-db"
+
 postgresql:
+  parameters:
+    max_wal_senders: 16  # must match bitnami for replication to work
+
+
   ## metacat override to allow password auth:
   pg_hba:
     # TYPE        DATABASE      USER          ADDRESS         METHOD
