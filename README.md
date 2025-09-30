@@ -75,45 +75,44 @@ Steps:
 > PostgreSQL major versions must be EQUAL for the source cluster and the destination cluster
 
 1. **Prepare the Source (Bitnami PostrgeSQL)** - Run [`scripts/migration-source-prep.sh`](scripts/migration-source-prep.sh) against the running Bitnami PostgreSQL pod, which modifies `pg_hba.conf`, to allow replication connections, creates a replication user and a physical replication slot, and sets `wal_keep_size` to 1024MB
-2. **Prepare the target (CNPG)** - BEFORE INSTALLING CNPG, ensure the following are set correctly in your values overrides (see example in [examples/values-overrides-metacat-dev.yaml](./examples/values-overrides-metacat-dev.yaml)):
+2. Create a Secret, holding the database username & password. IMPORTANT: the secret must be of type 'kubernetes.io/basic-auth', and must contain the exact key names: `username` and `password`.
+3. **Prepare the target (CNPG)** - BEFORE INSTALLING CNPG, ensure the following are set correctly in your values overrides (see example in [examples/values-overrides-metacat-dev.yaml](./examples/values-overrides-metacat-dev.yaml)):
    - `init.method: pg_basebackup`, `init.pg_basebackup`, `init.externalClusters`, and `replica` 
    - Ensure `postgresql.parameters.max_wal_senders` matches `max_wal_senders` on the source (see script output from step 1, above)
-3. `helm install` the cnpg chart. E.g:
+4. `helm install` the cnpg chart. E.g:
    ```shell
    $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
                               -f ./examples/values-overrides-metacat-dev.yaml
    ```
    This creates a `<rlsname>-cnpg-1-pgbasebackup-<id>` pod to make a copy of the bitnami source, and will then start the first pod of the cluster (`<rlsname>-cnpg-1`)
-4. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to add `include 'custom.conf'` to the `postgresql.conf` file, as follows:
-   1. Type this command below in the terminal, but do not hit `<Enter>` yet...
+5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to add `include 'custom.conf'` to the `postgresql.conf` file, as follows:
+   - Type this command below in the terminal, but do not hit `<Enter>` yet...
       ```shell
       # Assuming pod name is mcdb-cnpg-1, for example...
       kc exec mcdb-cnpg-1 -- sh -c \
         'echo "include '\''custom.conf'\''\n" >>  /var/lib/postgresql/data/pgdata/postgresql.conf && cat /var/lib/postgresql/data/pgdata/postgresql.conf'
       ```
-   2. Delete the cnpg pod so it restarts, and watch carefully. During restart, it goes through `PodInitializing`, `Init`, and then enters `Running` status briefly, before it crashes.
-   3. Hit `<Enter>` to execute the command in that small window of time when the pod is in `Running` status.
-
-   If you timed it correctly, the pod should then stop crashing, and the remaining pods should also start up successfully. If you missed the timing, just repeat these steps until it works. (This is a bit clunky, but it only needs to be done once, and there may be a better way to do this in future releases of CNPG.)
-5. Replication should now be working, and you can check the replication status by comparing the WAL LSN positions on source and target: 
+   - Delete the cnpg pod so it restarts, and watch carefully. During restart, it goes through `Init`, `PodInitializing`, and then enters `Running` status briefly, before it crashes.
+   - Hit `<Enter>` to execute the command in that small window of time when the pod is in `Running` status. This and the remaining pods should then start up successfully (if not, repeat these steps) 
+6. Replication should now be working, and you can check the replication status by comparing the WAL LSN positions on source and target: 
    - Source: `kubectl exec -i <source-podname> -- psql -U postgres -c "SELECT pg_current_wal_lsn();"`
    - Target: `kubectl cnpg status` from the local command line
 
 > [!NOTE]
-> Your application will be in read-only mode until the following steps are finished
+> Your application will be in read-only mode during the following steps...
 
-6. When replication has caught up, unlink source & target, and switch over to the CNPG cluster, as follows:
-   1. put your application in Read Only mode to stop writes to Bitnami PostgreSQL
+7. When replication has caught up, unlink source & target, and switch over to the CNPG cluster, as follows:
+   - put your application in Read Only mode to stop writes to Bitnami PostgreSQL
       - IMPORTANT! Make sure replication has caught up before proceeding!
-   2. `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
-   3. Determine which is the PRIMARY CNPG pod (using `kubectl cnpg status`), and fix any collation version mismatch in your application's database, by using:
+   - `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
+   - Determine which is the PRIMARY CNPG pod (using `kubectl cnpg status`), and fix any collation version mismatch in your application's database, by using:
       ```shell
       kubectl exec -i <cnpg-primary-pod> -- psql -U postgres <<EOF
         REINDEX DATABASE <your_db_name>;
         ALTER DATABASE <your_db_name> REFRESH COLLATION VERSION;
       EOF
       ```
-   4. `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
+   - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
 
 ### 2. PostgreSQL major version for the source cluster is LESS THAN OR EQUAL TO that of the destination cluster
 
