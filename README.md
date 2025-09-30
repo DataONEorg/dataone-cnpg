@@ -56,27 +56,27 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 Data can be imported from other PostgreSQL databases. The scenarios supported by this chart are:
 
-1. Streaming Replication (same major versions)
-   - Involves replication from an existing, binary-compatible PostgreSQL instance in the same cluster
-   - major versions must be EQUAL for the source cluster and the destination cluster
-2. Automated `pg_dump` and `pg_restore` import (works with mis-matched major versions) 
-   - import a database from an existing PostgreSQL cluster, even if located outside Kubernetes
-   - PostgreSQL major version for the source cluster must be LESS THAN OR EQUAL TO that of the destination cluster
+### 1. Automated `pg_dump` and `pg_restore` import (works with mis-matched major versions) 
 
-Each of these is discussed in more detail below:
+> Summary:
+> - imports a database from an existing PostgreSQL cluster, even if located outside Kubernetes
+> - PostgreSQL major version for the source cluster must be LESS THAN OR EQUAL TO that of the destination cluster
+> - Some downtime (or read-only time) required
+> - See the [DataONE Kubernetes Cluster documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/postgres/postgres.md#migrating-from-an-existing-database) for more details.
 
-### 1. Streaming Replication
+### 2. Streaming Replication (same major versions)
+
+> Summary:
+> - Replication from an existing, binary-compatible PostgreSQL instance in the same cluster
+> - PostgreSQL major versions must be EQUAL for the source cluster and the destination cluster
+> - Minimizes downtime/read-only time
 
 This approach uses `pg_basebackup` to create a PostgreSQL cluster by cloning an existing (and binary-compatible) one of the same major version, through the streaming replication protocol. See the [CloudNative PG documentation](https://cloudnative-pg.io/documentation/current/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup), and particularly **note the warnings and the Requirements section!**
 
 Steps:
-
-> [!IMPORTANT]
-> PostgreSQL major versions must be EQUAL for the source cluster and the destination cluster
-
-1. **Prepare the Source (Bitnami PostrgeSQL)** - Run [`scripts/migration-source-prep.sh`](scripts/migration-source-prep.sh) against the running Bitnami PostgreSQL pod, which modifies `pg_hba.conf`, to allow replication connections, creates a replication user and a physical replication slot, and sets `wal_keep_size` to 1024MB
+1. **Prepare the Source (Bitnami PostrgeSQL)** - Run [`scripts/migration-source-prep.sh`](scripts/migration-source-prep.sh) against the running Bitnami PostgreSQL pod. The script modifies `pg_hba.conf` to allow replication connections; creates a replication user and a physical replication slot; and sets `wal_keep_size` to 1024MB
 2. Create a Secret, holding the database username & password. IMPORTANT: the secret must be of type 'kubernetes.io/basic-auth', and must contain the exact key names: `username` and `password`.
-3. **Prepare the target (CNPG)** - BEFORE INSTALLING CNPG, ensure the following are set correctly in your values overrides (see example in [examples/values-overrides-metacat-dev.yaml](./examples/values-overrides-metacat-dev.yaml)):
+3. **Prepare the target (CNPG)** - BEFORE INSTALLING CNPG, ensure the following are set correctly in your values overrides (see metacat examples in [examples/values-overrides-metacat-dev.yaml](./examples/values-overrides-metacat-dev.yaml)):
    - `init.method: pg_basebackup`, `init.pg_basebackup`, `init.externalClusters`, and `replica` 
    - Ensure `postgresql.parameters.max_wal_senders` matches `max_wal_senders` on the source (see script output from step 1, above)
 4. `helm install` the cnpg chart. E.g:
@@ -85,7 +85,7 @@ Steps:
                               -f ./examples/values-overrides-metacat-dev.yaml
    ```
    This creates a `<rlsname>-cnpg-1-pgbasebackup-<id>` pod to make a copy of the bitnami source, and will then start the first pod of the cluster (`<rlsname>-cnpg-1`)
-5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to add `include 'custom.conf'` to the `postgresql.conf` file, as follows:
+5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to edit the `postgresql.conf` file, as follows:
    - Type this command below in the terminal, but do not hit `<Enter>` yet...
       ```shell
       # Assuming pod name is mcdb-cnpg-1, for example...
@@ -113,11 +113,6 @@ Steps:
       EOF
       ```
    - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
-
-### 2. PostgreSQL major version for the source cluster is LESS THAN OR EQUAL TO that of the destination cluster
-
-This approach uses `pg_restore` as part of the initial cluster creation, or it can be applied to an existing, empty cluster, using `pg_dump` and `pg_restore`. See the [CloudNative PG documentation](https://cloudnative-pg.io/documentation/current/database_import/) for more information.
-(Not yet implemented in this helm chart.)
 
 ## Development
 
