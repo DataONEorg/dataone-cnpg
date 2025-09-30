@@ -9,31 +9,33 @@ usage() {
     echo "Prepare a source PostgreSQL instance for migration to CNPG. Note this script assumes the "
     echo "postgres user has access to psql from a shell inside the pod (see pg_hba.conf)"
     echo
-    echo "Usage: $0 -p <pod_name>"
+    echo "Usage: $0 -p <pod_name> [ -u <postgres_user> ]"
     echo
-    echo "  -p <pod_name>          (required) name of postgres pod"
+    echo "  -p <pod_name>         (required) name of postgres pod"
+    echo "  -u <postgres_user>    (required) name of postgres user that cnpg will use to connect"
     exit 1
 }
 
 # Parse command-line arguments
-while getopts "p:" opt; do
+while getopts "p:u:" opt; do
     case ${opt} in
     p) POD_NAME=$OPTARG ;;
+    u) PG_USER=$OPTARG ;;
     *) usage ;;
     esac
 done
 
 # Check for required arguments
-if [ -z "${POD_NAME:-}" ]; then
+if [ -z "${POD_NAME:-}" ] || [ -z "${PG_USER:-}" ]; then
     usage
 fi
 
 echo "Add the following to pg_hba.conf in pod $POD_NAME if not already present:"
-echo "    host  replication  streaming_replica  0.0.0.0/0  md5"
+echo "    host  replication  ${PG_USER}  0.0.0.0/0  md5"
 read -p "[Enter] to continue or Ctrl-C to exit..."
 echo
-kubectl exec -i "$POD_NAME" -- bash <<'EOF'
-  REPLICA_HBA_ENTRY='host  replication  streaming_replica  0.0.0.0/0  md5'
+kubectl exec -i "$POD_NAME" -- env PG_USER="$PG_USER" bash <<'EOF'
+  REPLICA_HBA_ENTRY="host  replication  ${PG_USER}  0.0.0.0/0  md5"
   PG_HBA='/opt/bitnami/postgresql/conf/pg_hba.conf'
   grep -qxF "$REPLICA_HBA_ENTRY" $PG_HBA || echo "$REPLICA_HBA_ENTRY" >> $PG_HBA
 EOF
@@ -44,24 +46,11 @@ else
 fi
 
 echo
-echo "Create replication user 'streaming_replica' with REPLICATION privilege if it does not exist"
+echo "Grant REPLICATION privilege to user ${PG_USER}"
 read -p "[Enter] to continue or Ctrl-C to exit..."
 echo
-kubectl exec -i "$POD_NAME" -- psql -U postgres -v ON_ERROR_STOP=1 <<EOF
-DO \$\$
-BEGIN
-    IF NOT EXISTS (
-        SELECT FROM pg_roles WHERE rolname = 'streaming_replica'
-    ) THEN
-        CREATE USER streaming_replica WITH REPLICATION;
-    ELSIF NOT EXISTS (
-        SELECT FROM pg_roles WHERE rolname = 'streaming_replica' AND rolreplication
-    ) THEN
-        ALTER USER streaming_replica WITH REPLICATION;
-    END IF;
-END
-\$\$;
-EOF
+kubectl exec -i "$POD_NAME" -- psql -U postgres -v ON_ERROR_STOP=1 \
+    -c "ALTER USER ${PG_USER} WITH REPLICATION;"
 if [ $? -eq 0 ]; then
     echo "✅ Ensured replication user exists with REPLICATION privilege in pod $POD_NAME"
 else
