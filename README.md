@@ -81,7 +81,7 @@ Steps:
    - Ensure `postgresql.parameters.max_wal_senders` matches `max_wal_senders` on the source (see script output from step 1, above)
 4. `helm install` the cnpg chart. E.g:
    ```shell
-   $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
+   $ helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version> \
                               -f ./examples/values-overrides-metacat-dev.yaml
    ```
    This creates a `<rlsname>-cnpg-1-pgbasebackup-<id>` pod to make a copy of the bitnami source, and will then start the first pod of the cluster (`<rlsname>-cnpg-1`)
