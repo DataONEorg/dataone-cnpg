@@ -180,7 +180,14 @@ postgresql:
     ##
     shared_buffers: 128MB
 
-
+## If replica mode is enabled, this cluster will be a replica of an existing cluster. Replica
+## cluster can be created via streaming through pg_basebackup - see:
+## https://cloudnative-pg.io/documentation/current/replica_cluster/
+##
 replica:
+  ## @param replica.enabled Enable replica mode
   enabled: false
+  ## @param replica.source Name of the external cluster to use as the source for replication
+  ## This must match the name of one of the 'externalClusters' defined in 'init.externalClusters'
+  ##
   source: "source-db"

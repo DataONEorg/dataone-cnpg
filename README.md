@@ -134,17 +134,28 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 | `dbName`                   | The name of the database to create in the Postgres cluster.              | `test`          |
 | `dbUser`                   | DB owner/username. Leave blank to match the DB name (see `dbName`)       | `""`            |
 | `resources`                | Memory & CPU resource requests and limits for each PostgreSQL container. | `{}`            |
-| `persistence.storageClass` | PV StorageClass for postgres volumes                                     | `csi-cephfs-sc` |
+| `persistence.storageClass` | StorageClass for postgres volumes                                        | `csi-cephfs-sc` |
 | `persistence.size`         | PVC Storage size request for postgres volumes                            | `1Gi`           |
+
+### Options available to create a new PostgreSQL cluster
+
+| Name                    | Description                                                             | Value    |
+| ----------------------- | ----------------------------------------------------------------------- | -------- |
+| `init.method`           | Choose which bootstrapping methods to use when creating the new cluster | `initdb` |
+| `init.import`           | Import of data from external databases on startup                       | `{}`     |
+| `init.pg_basebackup`    | Uses streaming replication to copy an existing PG instance              | `{}`     |
+| `init.externalClusters` | external DB as a data source for import on startup                      | `[]`     |
 
 ### Optional PostgreSQL Configuration Parameters
 
-| Name                                    | Description                                 | Value             |
-| --------------------------------------- | ------------------------------------------- | ----------------- |
-| `postgresql.pg_hba`                     | Client authentication pg_hba.conf           | `[]`              |
-| `postgresql.pg_ident`                   | Override username mappings: pg_ident.conf   | `see values.yaml` |
-| `postgresql.parameters.max_connections` | override PG default 200 max DB connections. | `250`             |
-| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB) | `128MB`           |
+| Name                                    | Description                                                       | Value             |
+| --------------------------------------- | ----------------------------------------------------------------- | ----------------- |
+| `postgresql.pg_hba`                     | Client authentication pg_hba.conf                                 | `[]`              |
+| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings                            | `see values.yaml` |
+| `postgresql.parameters.max_connections` | override PG default 200 max DB connections.                       | `250`             |
+| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB)                       | `128MB`           |
+| `replica.enabled`                       | Enable replica mode                                               | `false`           |
+| `replica.source`                        | Name of the external cluster to use as the source for replication | `source-db`       |
 
 
 ## License
