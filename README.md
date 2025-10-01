@@ -95,15 +95,20 @@ Steps:
    - Delete the cnpg pod so it restarts, and watch carefully. During restart, it goes through `Init`, `PodInitializing`, and then enters `Running` status briefly, before it crashes.
    - Hit `<Enter>` to execute the command in that small window of time when the pod is in `Running` status. This and the remaining pods should then start up successfully (if not, repeat these steps) 
 6. Replication should now be working, and you can check the replication status by comparing the WAL LSN positions on source and target: 
-   - Source: `kubectl exec -i <source-podname> -- psql -U postgres -c "SELECT pg_current_wal_lsn();"`
-   - Target: `kubectl cnpg status` from the local command line
-
+   - Source:
+     ```shell
+     watch "kubectl exec -i metacatarctic-postgresql-0 --  psql -U postgres -c 'SELECT pg_current_wal_lsn();'"`
+     ```
+   - Target:
+     ```shell
+     watch kubectl cnpg status
+     ```
 > [!NOTE]
-> Your application will be in read-only mode during the following steps...
+> Your application will be in read-only mode during the following steps. To minimize downtime, make sure you have everything prepared, including the values overrides for the new chart that works with CNPG instead of Bitnami!
 
 7. When replication has caught up, unlink source & target, and switch over to the CNPG cluster, as follows:
    - put your application in Read Only mode to stop writes to Bitnami PostgreSQL
-      - IMPORTANT! Make sure replication has caught up before proceeding!
+      - ⚠️ IMPORTANT! Wait until replication has caught up before proceeding! (see step 6, above)
    - `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
    - Determine which is the PRIMARY CNPG pod (using `kubectl cnpg status`), and fix any collation version mismatch in your application's database, by using:
       ```shell
