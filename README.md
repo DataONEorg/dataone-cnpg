@@ -112,7 +112,7 @@ Steps:
    - `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
    - Determine which is the PRIMARY CNPG pod (using `kubectl cnpg status`), and fix any collation version mismatch in your application's database, by using:
       ```shell
-      kubectl exec -i <cnpg-primary-pod> -- psql -U postgres <<EOF
+      kubectl exec -i <cnpg-primary-pod> -- psql -U <your_db_user> <<EOF
         REINDEX DATABASE <your_db_name>;
         ALTER DATABASE <your_db_name> REFRESH COLLATION VERSION;
       EOF
