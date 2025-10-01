@@ -97,7 +97,7 @@ Steps:
 6. Replication should now be working, and you can check the replication status by comparing the WAL LSN positions on source and target: 
    - Source:
      ```shell
-     watch 'kubectl exec -i metacatarctic-postgresql-0 --  psql -U postgres -c "SELECT pg_current_wal_lsn();"'
+     watch 'kubectl exec -i <source-postgres-pod> --  psql -U postgres -c "SELECT pg_current_wal_lsn();"'
      ```
    - Target:
      ```shell
