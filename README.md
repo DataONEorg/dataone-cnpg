@@ -75,6 +75,13 @@ This approach uses `pg_basebackup` to create a PostgreSQL cluster by cloning an 
 
 Steps:
 1. **Prepare the Source (Bitnami PostrgeSQL)** - Run [`scripts/migration-source-prep.sh`](scripts/migration-source-prep.sh) against the running Bitnami PostgreSQL pod. The script modifies `pg_hba.conf` to allow replication connections; creates a replication user and a physical replication slot; and sets `wal_keep_size` to 1024MB
+- Note: If you do not use the script file directly from cloning this repo, it may not have executable permissions. This happens when you download the script file through GitHub into your local Downloads folder.
+
+```
+# Run this through your command line
+$ '/Location/of/dataone-cnpg/migration-source-prep.sh' -p [POD_NAME] -u [USER_NAME] 
+```
+
 2. Create a Secret, holding the database username & password. IMPORTANT: the secret must be of type 'kubernetes.io/basic-auth', and must contain the exact key names: `username` and `password`.
 3. **Prepare the target (CNPG)** - BEFORE INSTALLING CNPG, ensure the following are set correctly in your values overrides (see metacat examples in [examples/values-overrides-metacat-dev.yaml](./examples/values-overrides-metacat-dev.yaml)):
    - `init.method: pg_basebackup`, `init.pg_basebackup`, `init.externalClusters`, and `replica` 
