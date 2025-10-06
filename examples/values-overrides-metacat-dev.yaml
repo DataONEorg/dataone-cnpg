@@ -6,7 +6,7 @@
 ##
 ## How to deploy a cluster with this example file:
 ##
-## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
+## $ helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f ./examples/values-overrides-metacat-dev.yaml
 
 dbName: metacat
