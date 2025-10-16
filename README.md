@@ -127,7 +127,7 @@ Steps:
      ```
    - Target:
      ```shell
-     watch kubectl cnpg status
+     watch kubectl cnpg status <cnpg-clustername>
      ```
 > [!IMPORTANT]
 > Your application will be in read-only mode during the following steps. To minimize downtime, make sure you have everything prepared, including the values overrides for the new chart that works with CNPG instead of Bitnami!
