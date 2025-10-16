@@ -138,7 +138,7 @@ Steps:
    - `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
    - Restart the primary CNPG instance, **using the Kubectl CNPG plugin**, so the remaining CNPG replicas can be created and start replicating. ⚠️ **Do not simply delete the pod - it will not be recreated!**:
      ```shell
-     kubectl cnpg restart mcdbgoa-cnpg 1
+     kubectl cnpg restart <cnpg-clustername> 1
      ``` 
    - Using `kubectl cnpg status`:
      - determine which is the PRIMARY CNPG pod, and
