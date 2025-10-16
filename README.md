@@ -95,8 +95,10 @@ Steps:
 5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to edit the `postgresql.conf` file, as follows:
    - Type this command below in the terminal, but do not hit `<Enter>` yet...
       ```shell
-      kc exec <cnpg-pod-name> -- sh -c \
-        'echo "include '\''custom.conf'\''\n" >>  /var/lib/postgresql/data/pgdata/postgresql.conf && cat /var/lib/postgresql/data/pgdata/postgresql.conf'
+      while ! yes | kc exec <pod> -- sh -c "grep -q custom.conf /var/lib/postgresql/data/pgdata/postgresql.conf \
+          || echo \"include 'custom.conf'\" >> /var/lib/postgresql/data/pgdata/postgresql.conf"; do
+        sleep 0.2
+      done
       ```
    - Delete the cnpg pod so it restarts, and watch carefully. During restart, it goes through `Init`, `PodInitializing`, and then enters `Running` status briefly, before it crashes.
    - Hit `<Enter>` to execute the command in that small window of time when the pod is in `Running` status. This and the remaining pods should then start up successfully (if not, repeat these steps) 
