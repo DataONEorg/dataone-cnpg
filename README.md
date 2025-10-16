@@ -64,6 +64,20 @@ Data can be imported from other PostgreSQL databases. The scenarios supported by
 > - Some downtime (or read-only time) required
 > - See the [DataONE Kubernetes Cluster documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/postgres/postgres.md#migrating-from-an-existing-database) for more details.
 
+  - Example configuration (for `metadig`):
+    
+    ```yaml
+    init:
+      import:
+        type: microservice
+        databases:
+          - metadig
+        source:
+          externalCluster: cluster-metadig-10
+        pgRestoreExtraOptions:
+          - '--verbose'
+    ```
+
 ### 2. Streaming Replication (same major versions)
 
 > Summary:
