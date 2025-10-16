@@ -95,7 +95,7 @@ Steps:
 5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to edit the `postgresql.conf` file, as follows:
    - Type this command below in the terminal, but do not hit `<Enter>` yet...
       ```shell
-      while ! yes | kc exec <pod> -- sh -c "grep -q custom.conf /var/lib/postgresql/data/pgdata/postgresql.conf \
+      while ! kubectl exec <pod> -- sh -c "grep -q custom.conf /var/lib/postgresql/data/pgdata/postgresql.conf \
           || echo \"include 'custom.conf'\" >> /var/lib/postgresql/data/pgdata/postgresql.conf"; do
         sleep 0.2
       done
