@@ -134,16 +134,22 @@ Steps:
 
 7. When replication has caught up, unlink source & target, and switch over to the CNPG cluster, as follows:
    - put your application in Read Only mode to stop writes to Bitnami PostgreSQL
-      - ⚠️ IMPORTANT! Wait until replication has caught up before proceeding! (see step 6, above)
+
+**=== START READ-ONLY MODE ===**
+
+⚠️ IMPORTANT! Wait until replication has caught up before proceeding! (see step 6, above)
+
    - `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
    - Restart the primary CNPG instance, **using the Kubectl CNPG plugin**, so the remaining CNPG replicas can be created and start replicating. ⚠️ **Do not simply delete the pod - it will not be recreated!**:
      ```shell
      kubectl cnpg restart <cnpg-clustername> 1
      ``` 
+   - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
+
+**=== END READ-ONLY MODE ===**
+
    - Using `kubectl cnpg status`:
-     - determine which is the PRIMARY CNPG pod, and
-     - ensure that the two replica pods have caught up.
-   - On the primary pod, fix any collation version mismatch in your application's database, by using:
+     - determine which is the PRIMARY CNPG pod, and use it fix any collation version mismatch in your application's database:
       ```shell
       kubectl exec -i <cnpg-primary-pod> -- psql -U <your_db_user> <<EOF
         REINDEX DATABASE <your_db_name>;
@@ -151,7 +157,7 @@ Steps:
       EOF
       ```
       (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
-   - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
+     - ensure that the two replica pods have caught up (`kubectl cnpg status`).
 
 ## Development
 
