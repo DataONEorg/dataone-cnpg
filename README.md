@@ -150,6 +150,7 @@ Steps:
         ALTER DATABASE <your_db_name> REFRESH COLLATION VERSION;
       EOF
       ```
+      (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
    - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
 
 ## Development
