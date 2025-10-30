@@ -135,7 +135,7 @@ Steps:
 7. When replication has caught up, unlink source & target, and switch over to the CNPG cluster, as follows:
    - put your application in Read Only mode to stop writes to Bitnami PostgreSQL
 
-**=== START READ-ONLY MODE ===**
+#### === START READ-ONLY MODE ===
 
 ⚠️ IMPORTANT! Wait until replication has caught up before proceeding! (see step 6, above)
 
@@ -146,7 +146,7 @@ Steps:
      ``` 
    - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
 
-**=== END READ-ONLY MODE ===**
+#### === END READ-ONLY MODE ===
 
    - Using `kubectl cnpg status`:
      - determine which is the PRIMARY CNPG pod, and use it fix any collation version mismatch in your application's database:
