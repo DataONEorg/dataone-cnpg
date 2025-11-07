@@ -64,6 +64,20 @@ Data can be imported from other PostgreSQL databases. The scenarios supported by
 > - Some downtime (or read-only time) required
 > - See the [DataONE Kubernetes Cluster documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/postgres/postgres.md#migrating-from-an-existing-database) for more details.
 
+  - Example configuration (for `metadig`):
+    
+    ```yaml
+    init:
+      import:
+        type: microservice
+        databases:
+          - metadig
+        source:
+          externalCluster: cluster-metadig-10
+        pgRestoreExtraOptions:
+          - '--verbose'
+    ```
+
 ### 2. Streaming Replication (same major versions)
 
 > Summary:
@@ -95,36 +109,55 @@ Steps:
 5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to edit the `postgresql.conf` file, as follows:
    - Type this command below in the terminal, but do not hit `<Enter>` yet...
       ```shell
-      # Assuming pod name is mcdb-cnpg-1, for example...
-      kc exec mcdb-cnpg-1 -- sh -c \
-        'echo "include '\''custom.conf'\''\n" >>  /var/lib/postgresql/data/pgdata/postgresql.conf && cat /var/lib/postgresql/data/pgdata/postgresql.conf'
+      while ! kubectl exec <pod> -- sh -c "grep -q custom.conf /var/lib/postgresql/data/pgdata/postgresql.conf \
+          || echo \"include 'custom.conf'\" >> /var/lib/postgresql/data/pgdata/postgresql.conf"; do
+        sleep 0.2
+      done
       ```
    - Delete the cnpg pod so it restarts, and watch carefully. During restart, it goes through `Init`, `PodInitializing`, and then enters `Running` status briefly, before it crashes.
-   - Hit `<Enter>` to execute the command in that small window of time when the pod is in `Running` status. This and the remaining pods should then start up successfully (if not, repeat these steps) 
-6. Replication should now be working, and you can check the replication status by comparing the WAL LSN positions on source and target: 
+   - Hit `<Enter>` to execute the command in that small window of time when the pod is in `Running` status. This pod should then start up successfully (if not, repeat these steps)
+
+> [!NOTE]
+> The remaining pods will NOT start up yet; there will be only one instance in the CNPG cluster at this point. The pod that's trying to start the second instance will show this error in the logs: `FATAL: role "streaming_replica" does not exist (SQLSTATE 28000)`. This is expected, since CNPG won't create the `"streaming_replica"` user until it exits continuous recovery mode and becomes a primary cluster, completely detached from the original source (see step 7).
+
+6. Replication should now be working from your source postgres pod to the primary cnpg cluster instance. You can check the replication status by comparing the WAL LSN positions on source and target: 
    - Source:
      ```shell
      watch 'kubectl exec -i <source-postgres-pod> --  psql -U postgres -c "SELECT pg_current_wal_lsn();"'
      ```
    - Target:
      ```shell
-     watch kubectl cnpg status
+     watch kubectl cnpg status <cnpg-clustername>
      ```
-> [!NOTE]
+> [!IMPORTANT]
 > Your application will be in read-only mode during the following steps. To minimize downtime, make sure you have everything prepared, including the values overrides for the new chart that works with CNPG instead of Bitnami!
 
 7. When replication has caught up, unlink source & target, and switch over to the CNPG cluster, as follows:
    - put your application in Read Only mode to stop writes to Bitnami PostgreSQL
-      - ⚠️ IMPORTANT! Wait until replication has caught up before proceeding! (see step 6, above)
+
+#### === START READ-ONLY MODE ===
+
+⚠️ IMPORTANT! Wait until replication has caught up before proceeding! (see step 6, above)
+
    - `helm upgrade` the CNPG chart with the command line parameter `--set replica.enabled=false`, so it stops replicating
-   - Determine which is the PRIMARY CNPG pod (using `kubectl cnpg status`), and fix any collation version mismatch in your application's database, by using:
+   - Restart the primary CNPG instance, **using the Kubectl CNPG plugin**, so the remaining CNPG replicas can be created and start replicating. ⚠️ **Do not simply delete the pod - it will not be recreated!**:
+     ```shell
+     kubectl cnpg restart <cnpg-clustername> 1
+     ``` 
+   - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
+
+#### === END READ-ONLY MODE ===
+
+   - Using `kubectl cnpg status`:
+     - determine which is the PRIMARY CNPG pod, and use it fix any collation version mismatch in your application's database:
       ```shell
       kubectl exec -i <cnpg-primary-pod> -- psql -U <your_db_user> <<EOF
         REINDEX DATABASE <your_db_name>;
         ALTER DATABASE <your_db_name> REFRESH COLLATION VERSION;
       EOF
       ```
-   - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
+      (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
+     - ensure that the two replica pods have caught up (`kubectl cnpg status`).
 
 ## Development
 

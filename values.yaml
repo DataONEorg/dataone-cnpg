@@ -184,13 +184,10 @@ postgresql:
 ## cluster can be created via streaming through pg_basebackup - see:
 ## https://cloudnative-pg.io/documentation/current/replica_cluster/
 ##
-replica:
-  ## @param replica.enabled Enable replica mode
-  enabled: false
-  ## @param replica.source Name of the external cluster to use as the source for replication
-  ## This must match the name of one of the 'externalClusters' defined in 'init.externalClusters'
-  ##
-  source: "source-db"
+## replica:
+##   enabled: false
+##   source: "source-db"    # must be defined in 'init.externalClusters'
+replica: {}
   
 ## Add backup capability to all clusters
 ## https://cloudnative-pg.io/documentation/1.27/backup/
