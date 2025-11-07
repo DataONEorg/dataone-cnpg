@@ -191,3 +191,15 @@ replica:
   ## This must match the name of one of the 'externalClusters' defined in 'init.externalClusters'
   ##
   source: "source-db"
+  
+## Add backup capability to all clusters
+## https://cloudnative-pg.io/documentation/1.27/backup/
+##
+backup:
+  ## By default, configure the backup method to use k8s VolumeSnapshots as a default
+  ## https://cloudnative-pg.io/documentation/1.27/appendixes/backup_volumesnapshot/
+  ##
+  volumeSnapshot:
+    ## @param backup.volumeSnapshot.className VolumeSnapshotClass to be used to make backups
+    ##
+    className: csi-cephfsplugin-snapclass
