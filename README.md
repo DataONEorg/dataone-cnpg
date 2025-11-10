@@ -159,6 +159,29 @@ Steps:
       (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
      - ensure that the two replica pods have caught up (`kubectl cnpg status`).
 
+
+## Scheduled Backup
+
+At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
+
+To set up a `ScheduledBackup`, copy the `scheduled-backup.yaml` file from the `/templates` folder, and update the placeholder with its respective information. Afterwards, apply the configuration by executing the following:
+
+```sh
+# Note, you must have admin privileges to apply the `ScheduledBackup` resource
+$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/backup/scheduled-backup.yaml' -n vegbank-dev --context=dev-k8s
+
+scheduledbackup.postgresql.cnpg.io/vegbankdb-scheduled-backup configured
+```
+
+You can also check the existing backups by executing the following:
+
+```sh
+$ kubectl get backups -n vegbank-dev
+
+NAME                                        AGE   CLUSTER          METHOD           PHASE       ERROR
+vegbankdb-scheduled-backup-20251107221536   12s   vegbankdb-cnpg   volumeSnapshot   completed 
+```
+
 ## Development
 
 The intent of this helm chart is to provide as lightweight a wrapper as possible, keeping configuration to a minimum. There are many parameters that can be set ([see the CNPG API documentation](https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/)), but the following should provide sufficient flexibility for most use cases. If you need to add more parameters to the values.yaml file, please limit changes as much as possible, in the interest of simplicity. After adding values and their associated documentation, regenerate the parameters table below, using the [Bitnami Readme Generator for Helm](https://github.com/bitnami/readme-generator-for-helm).
