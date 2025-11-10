@@ -193,7 +193,7 @@ replica: {}
 ## https://cloudnative-pg.io/documentation/1.27/backup/
 ##
 backup:
-  ## By default, configure the backup method to use k8s VolumeSnapshots as a default
+  ## Configure the backup method to use k8s VolumeSnapshots as a default
   ## https://cloudnative-pg.io/documentation/1.27/appendixes/backup_volumesnapshot/
   ##
   volumeSnapshot:
