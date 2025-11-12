@@ -162,7 +162,7 @@ Steps:
 
 ## Scheduled Backup
 
-At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
+Upon installation of any cnpg cluster, we have enabled backups with At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
 
 To set up a `ScheduledBackup`, copy the `scheduled-backup.yaml` file from the `/templates` folder, and update the placeholder with its respective information. Afterwards, apply the configuration by executing the following:
 
@@ -178,8 +178,12 @@ You can also check the existing backups by executing the following:
 ```sh
 $ kubectl get backups -n vegbank-dev
 
-NAME                                        AGE   CLUSTER          METHOD           PHASE       ERROR
-vegbankdb-scheduled-backup-20251107221536   12s   vegbankdb-cnpg   volumeSnapshot   completed 
+NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
+vegbankdb-scheduled-backup-20251107221536   4d21h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251108210000   3d23h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251109210000   2d23h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251110210000   47h     vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251111210000   23h     vegbankdb-cnpg   volumeSnapshot   completed
 ```
 
 ## Development
