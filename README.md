@@ -162,7 +162,7 @@ Steps:
 
 ## Scheduled Backup
 
-Upon installation of any cnpg cluster, we have enabled backups with At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
+Upon installation of any cnpg cluster, you will be able to implement scheduled backups. At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
 
 To set up a `ScheduledBackup`, copy the `scheduled-backup.yaml` file from the `/templates` folder, and update the placeholder with its respective information. Afterwards, apply the configuration by executing the following:
 
