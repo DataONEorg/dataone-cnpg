@@ -2,11 +2,10 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: PLACEHOLDER-scheduled-backup # Your desired backup name, ex. 'dou-scheduled-backup'
+  name: {{ .Release.Name }}-scheduled-backup
 spec:
   cluster:
-    name: PLACEHOLDER # Name of the CNPG Cluster - you can confirm this by executing `kubectl get cluster -n your-context-name`
-  method: volumeSnapshot
+    name: {{ .Release.Name }}-cnpg
   backupOwnerReference: self
-  schedule: '0 0 21 * * *' # 9PM Every Day - Six-term cron schedule specification: https://cloudnative-pg.io/documentation/1.20/backup/
+  schedule: '0 0 21 * * *'
   immediate: true
