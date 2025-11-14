@@ -7,5 +7,5 @@ spec:
   cluster:
     name: {{ .Release.Name }}-cnpg
   backupOwnerReference: self
-  schedule: '0 0 21 * * *'
+  schedule: '0 0 21 * * *' # 9PM UTC Daily - Six-term cron schedule specification: https://cloudnative-pg.io/documentation/1.20/backup/
   immediate: true
