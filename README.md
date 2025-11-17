@@ -55,30 +55,29 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 ## Scheduled Backup
 
-Upon installation of any cnpg cluster, you will be able to implement scheduled backups. At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
-
-To set up a `ScheduledBackup`, copy the `scheduled-backup.yaml` file from the `/templates` folder, and update the placeholder with its respective information. Afterwards, apply the configuration by executing the following:
+The `ScheduledBackup` functionality is available for all `cnpg` installations. Note, backups are not activated by default. To enable this functionality, change the `backup.enabled` option from `false` to `true` in `values.yaml` before installing your chart from this repo. If you are installing `cnpg` on your context in your own repo, you may want to consider a `values-overrides.yaml` file where you will override the default `backup.enabled` option, or do a one-time installation with the override like such:
 
 ```sh
-# Note, you must have admin privileges to apply the `ScheduledBackup` resource
-$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/backup/scheduled-backup.yaml' -n vegbank-dev --context=dev-k8s
-
-scheduledbackup.postgresql.cnpg.io/vegbankdb-scheduled-backup configured
+$ helm install yourdb ./helm --set backup.enabled=true
 ```
 
-You can also check the existing backups by executing the following:
+During the installation of the `cnpg` chart with this option enabled, an immediate `backup` will be created. You can check backups by executing the following:
 
 ```sh
 $ kubectl get backups -n vegbank-dev
 
 NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
-vegbankdb-scheduled-backup-20251107221536   4d21h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251108210000   3d23h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251109210000   2d23h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251110210000   47h     vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251111210000   23h     vegbankdb-cnpg   volumeSnapshot   completed
+vegbankdb-scheduled-backup-20251113210000   4d1h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251114210000   3d1h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251115210000   2d1h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251116210000   25h    vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapshot   completed
+yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed 
 ```
 
+### VolumeSnapshots & Backup Philosophy
+
+At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups so it is set as a default. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
 
 ## Importing Data
 
