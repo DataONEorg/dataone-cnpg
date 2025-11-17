@@ -52,6 +52,34 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 > [!CAUTION]
 > Make sure you have provided the correct credentials in the secret, along with `dbUser` and `dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
+
+## Scheduled Backup
+
+Upon installation of any cnpg cluster, you will be able to implement scheduled backups. At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
+
+To set up a `ScheduledBackup`, copy the `scheduled-backup.yaml` file from the `/templates` folder, and update the placeholder with its respective information. Afterwards, apply the configuration by executing the following:
+
+```sh
+# Note, you must have admin privileges to apply the `ScheduledBackup` resource
+$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/backup/scheduled-backup.yaml' -n vegbank-dev --context=dev-k8s
+
+scheduledbackup.postgresql.cnpg.io/vegbankdb-scheduled-backup configured
+```
+
+You can also check the existing backups by executing the following:
+
+```sh
+$ kubectl get backups -n vegbank-dev
+
+NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
+vegbankdb-scheduled-backup-20251107221536   4d21h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251108210000   3d23h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251109210000   2d23h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251110210000   47h     vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251111210000   23h     vegbankdb-cnpg   volumeSnapshot   completed
+```
+
+
 ## Importing Data
 
 Data can be imported from other PostgreSQL databases. The scenarios supported by this chart are:
@@ -159,32 +187,6 @@ Steps:
       (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
      - ensure that the two replica pods have caught up (`kubectl cnpg status`).
 
-
-## Scheduled Backup
-
-Upon installation of any cnpg cluster, you will be able to implement scheduled backups. At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
-
-To set up a `ScheduledBackup`, copy the `scheduled-backup.yaml` file from the `/templates` folder, and update the placeholder with its respective information. Afterwards, apply the configuration by executing the following:
-
-```sh
-# Note, you must have admin privileges to apply the `ScheduledBackup` resource
-$ kubectl apply -f '/Users/doumok/Code/vegbank2/helm/backup/scheduled-backup.yaml' -n vegbank-dev --context=dev-k8s
-
-scheduledbackup.postgresql.cnpg.io/vegbankdb-scheduled-backup configured
-```
-
-You can also check the existing backups by executing the following:
-
-```sh
-$ kubectl get backups -n vegbank-dev
-
-NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
-vegbankdb-scheduled-backup-20251107221536   4d21h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251108210000   3d23h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251109210000   2d23h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251110210000   47h     vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251111210000   23h     vegbankdb-cnpg   volumeSnapshot   completed
-```
 
 ## Development
 
