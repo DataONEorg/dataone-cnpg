@@ -1,4 +1,6 @@
-# Custom CNPG Resource for Scheduled Backups
+# Create a custom CNPG Resource for Scheduled Backups
+# Scheduled backups are enabled via 'values.yaml'
+{{- if .Values.scheduledBackup.enabled }}
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
@@ -9,3 +11,4 @@ spec:
   backupOwnerReference: self
   schedule: '0 0 21 * * *' # 9PM UTC Daily - Six-term cron schedule specification: https://cloudnative-pg.io/documentation/1.20/backup/
   immediate: true
+{{- end }}
