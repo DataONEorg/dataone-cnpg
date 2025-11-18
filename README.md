@@ -55,11 +55,9 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 ## Scheduled Backup
 
-The `ScheduledBackup` functionality is available for all `cnpg` installations. Note, backups are not activated by default. To enable this functionality, change the `backup.enabled` option from `false` to `true` in `values.yaml` before installing your chart from this repo. If you are installing `cnpg` on your context in your own repo, you may want to consider a `values-overrides.yaml` file where you will override the default `backup.enabled` option, or do a one-time installation with the override like such:
+The `ScheduledBackup` functionality is available for all `cnpg` installations. Note, backups are not activated by default. To enable this functionality, set `backup.enabled` to `true` in `values.yaml`
 
-```sh
-$ helm install yourdb ./helm --set backup.enabled=true
-```
+At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups so it is set as a default. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
 
 During the installation of the `cnpg` chart with this option enabled, an immediate `backup` will be created. You can check backups by executing the following:
 
@@ -75,9 +73,6 @@ vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapsh
 yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed 
 ```
 
-### VolumeSnapshots & Backup Philosophy
-
-At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups so it is set as a default. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
 
 ## Importing Data
 
