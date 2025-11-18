@@ -52,6 +52,28 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 > [!CAUTION]
 > Make sure you have provided the correct credentials in the secret, along with `dbUser` and `dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
+
+## Scheduled Backup
+
+The `ScheduledBackup` functionality is available for all `cnpg` installations. Note, backups are not activated by default. To enable this functionality, set `backup.enabled` to `true` in `values.yaml`
+
+At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups so it is set as a default. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
+
+During the installation of the `cnpg` chart with this option enabled, an immediate `backup` will be created. You can check backups by executing the following:
+
+```sh
+$ kubectl get backups -n vegbank-dev
+
+NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
+vegbankdb-scheduled-backup-20251113210000   4d1h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251114210000   3d1h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251115210000   2d1h   vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251116210000   25h    vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapshot   completed
+yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed 
+```
+
+
 ## Importing Data
 
 Data can be imported from other PostgreSQL databases. The scenarios supported by this chart are:
@@ -158,6 +180,7 @@ Steps:
       ```
       (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
      - ensure that the two replica pods have caught up (`kubectl cnpg status`).
+
 
 ## Development
 
