@@ -87,6 +87,9 @@ persistence:
 ##    - by syncing directly (pg_basebackup) or
 ##    - [Not yet supported by this helm chart] indirectly through a physical base backup (recovery)
 ##
+## 3. From a scheduled backup
+##    - Recovers a cnpg postgres cluster using a volume snapshot via Scheduled Backups
+##
 init:
   ## @param init.method Choose which bootstrapping methods to use when creating the new cluster
   ## - initdb: create a new, empty database, with optional import from an external DB
