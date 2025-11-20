@@ -29,6 +29,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     {{- end }}
+    {{- if eq .Values.init.method "recovery" }}
+    {{- with .Values.init.recovery }}
+    recovery:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
     {{- if eq .Values.init.method "pg_basebackup" }}
     {{- with .Values.init.pg_basebackup }}
     pg_basebackup:
