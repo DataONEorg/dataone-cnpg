@@ -1,7 +1,7 @@
 ## Create a PostgreSQL cluster using the CloudNative-PG operator
 ## (https://github.com/cloudnative-pg/cloudnative-pg)
 ##
-{{ $validMethods := tuple "initdb" "pg_basebackup" }}
+{{ $validMethods := tuple "initdb" "pg_basebackup" "recovery" }}
 {{- if not (has .Values.init.method $validMethods) }}
 {{ required ( printf ".Values.init.method must be one of %s" $validMethods ) "" | fail }}
 {{- end }}
