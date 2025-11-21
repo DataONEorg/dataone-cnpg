@@ -112,15 +112,16 @@ init:
   ##
   import: {}
 
-  ## @param init.recovery
-  ## Keycloak example:
-  ## recovery:
+  ## @param init.recovery Recover a cnpg cluster from a volume snapshot via ScheduledBackups
+  ## Vegbank2 Example:
+  ## init:
+  ##   method: "recovery"
   ##   backup:
-  ##     name: keycloakx-scheduled-backup-20251106044736
-  ##   database: keycloak
-  ##   owner: keycloak
+  ##     name: vegbankdb-scheduled-backup-20251107221536
+  ##   database: vegbank
+  ##   owner: vegbank
   ##   secret:
-  ##     name: keycloak-pg
+  ##     name: vegbankdbcreds
   recovery: {}
 
   ## @param init.pg_basebackup Uses streaming replication to copy an existing PG instance
