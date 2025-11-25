@@ -30,10 +30,13 @@ spec:
       {{- end }}
     {{- end }}
     {{- if eq .Values.init.method "recovery" }}
-    {{- with .Values.init.recovery }}
     recovery:
-      {{- toYaml . | nindent 6 }}
-    {{- end }}
+      backup:
+        name: {{ .Values.init.scheduledBackup }}
+      database: {{ .Values.dbName }}
+      owner: {{ .Values.dbUser }}
+      secret:
+        name: {{ .Values.existingSecret }}
     {{- end }}
     {{- if eq .Values.init.method "pg_basebackup" }}
     {{- with .Values.init.pg_basebackup }}
