@@ -117,7 +117,8 @@ init:
   ## init:
   ##   method: "recovery"
   ##   backup:
-  ##     name: vegbankdb-scheduled-backup-20251107221536
+  ##     ## Get available backups via `kubectl get backups`
+  ##     name: vegbankdb-scheduled-backup-20251107221536 
   ##   database: vegbank
   ##   owner: vegbank
   ##   secret:
