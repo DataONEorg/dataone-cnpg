@@ -122,6 +122,7 @@ init:
   ##   database: vegbank
   ##   owner: vegbank
   ##   secret:
+  ##     ## This is typically the same secret as '.Values.existingSecret'
   ##     name: vegbankdbcreds
   recovery: {}
 
