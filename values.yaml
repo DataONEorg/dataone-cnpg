@@ -76,7 +76,7 @@ persistence:
   size: 1Gi
 
 ## @section Options available to create a new PostgreSQL cluster
-## There are primarily two ways to bootstrap a new cluster:
+## There are primarily threww ways to bootstrap a new cluster:
 ##
 ## 1. From scratch (initdb)
 ##    - Creates a new, empty database.
@@ -85,7 +85,6 @@ persistence:
 ##
 ## 2. From an existing K8s PostgreSQL cluster, either:
 ##    - by syncing directly (pg_basebackup) or
-##    - [Not yet supported by this helm chart] indirectly through a physical base backup (recovery)
 ##
 ## 3. From a scheduled backup
 ##    - Recovers a cnpg postgres cluster using a volume snapshot via Scheduled Backups
