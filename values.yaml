@@ -3,7 +3,7 @@
 ##   - postgresql.conf: main run-time configuration file of PostgreSQL
 ##   - pg_hba.conf: clients authentication file
 ##   - pg_ident.conf: map external users to internal users
-## See: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/
+## See: https://cloudnative-pg.io/documentation/current/postgresql_conf/
 ##
 ## Typically, you would override these parameters as necessary, in your own application's
 ## environment-specific values-overrides yaml file, and then deploy the application using:
@@ -11,7 +11,7 @@
 ## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f </path/to/your/values-overrides.yaml>
 
-## @section CloudNative PG Operator Configuration Parameters
+## @section Cluster Configuration Parameters
 
 ## @param instances Number of PostgreSQL instances required in the PG cluster.
 ##
@@ -29,7 +29,7 @@ instances: 3
 ##    Changing the credentials in the secret and doing a 'helm upgrade' after the cluster has been
 ##    created, will NOT update the credentials in the existing Postgres database!
 ##
-existingSecret: ""
+existingSecret: ""    # Leave blank to auto-create a secret file with a generated secure password
 
 ## @param dbName The name of the database to create in the Postgres cluster.
 ##
@@ -49,11 +49,13 @@ dbName: test
 ## 2. If you are providing your own Secret (see 'existingSecret'), then the username in the
 ##    secret must match this value.
 ##
-dbUser: ""
+dbUser: ""    # Leave blank to default to the value of 'dbName'
 
 ## @param resources Memory & CPU resource requests and limits for each PostgreSQL container.
+##
 ## For a PostgreSQL workload it is recommended to set a "Guaranteed" QoS. See the CNPG docs:
-## https://cloudnative-pg.io/documentation/1.20/resource_management/
+## https://cloudnative-pg.io/documentation/current/resource_management/
+##
 ## For your cluster's pods to get assigned to the "Guaranteed" QoS class, you must set limits
 ## and requests for both CPU and memory TO THE SAME VALUE!
 ## Example (use your own values for 'cpu' and 'memory'):
@@ -67,7 +69,7 @@ dbUser: ""
 ##
 resources: {}
 
-## Database File Storage settings
+## @section Database File Storage Settings
 ## @param persistence.storageClass StorageClass for postgres volumes
 ## @param persistence.size PVC Storage size request for postgres volumes
 ##
@@ -76,60 +78,66 @@ persistence:
   size: 1Gi
 
 ## @section Options available to create a new PostgreSQL cluster
-## There are primarily threww ways to bootstrap a new cluster:
+## There are primarily three ways to bootstrap a new cluster:
 ##
-## 1. From scratch (initdb)
-##    - Creates a new, empty database.
-##    - Optionally automates 'pg_dump' & 'pg_restore' to import a database from an existing
+## 1. From scratch (initdb):
+##    - Creates a new, empty database, or:
+##    - Optionally automates a 'pg_dump' & a 'pg_restore' to import a database from an existing
 ##       PostgreSQL cluster, even if located outside Kubernetes or running a different major version
+##       of PostgreSQL. The external database to import is defined in the 'init.externalClusters'
 ##
-## 2. From an existing K8s PostgreSQL cluster, either:
-##    - by syncing directly (pg_basebackup) or
+## 2. From an existing K8s PostgreSQL cluster (pg_basebackup):
+##    - Uses streaming replication to copy an existing, binary-compatible PostgreSQL instance (same
+##      major version), running either inside or outside Kubernetes, as defined in the
+##      'init.externalClusters' section, below
 ##
-## 3. From a scheduled backup
-##    - Recovers a cnpg postgres cluster using a volume snapshot via Scheduled Backups
+## 3. From a scheduled backup (recovery):
+##    - Recovers a CNPG postgres cluster using a volume snapshot that was previously created via
+##      Scheduled Backups (see the 'backup:' section, below)
 ##
 init:
-  ## @param init.method Choose which bootstrapping methods to use when creating the new cluster
-  ## - initdb: create a new, empty database, with optional import from an external DB
-  ## - pg_basebackup: use streaming replication to copy an existing, binary-compatible PG instance
-  ## - recovery: recover a cluster from a scheduled backup
+  ## @param init.method How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)
+  ## - initdb:          Create a new, empty database, with optional import from an external DB
+  ## - pg_basebackup:   Use streaming replication to copy an existing, binary-compatible PG instance
+  ## - recovery:        Recover a cluster from a scheduled backup
   ##
   method: initdb
 
-  ## @param init.import Import of data from external databases on startup
-  ## ADC Metacat example:
-  ##  import:
-  ##    type: microservice
-  ##    databases:
-  ##      - metacat
-  ##    source:
-  ##      ## as defined in 'cnpg.externalClusters'
-  ##      externalCluster: metacatarctic-postgresql-0
-  ##    pgRestoreExtraOptions:
-  ##      - '--verbose'
+  ## @param init.import (if `init.method: initdb`) Import of data from external databases on startup
+  ## using automated 'pg_dump' & 'pg_restore'
   ##
-  import: {}
+  ## ADC Metacat example:
+  ##   import:
+  ##     type: microservice
+  ##     databases:
+  ##       - metacat
+  ##     source:
+  ##       ## as defined in 'init.externalClusters'
+  ##       externalCluster: metacatarctic-postgresql-0
+  ##     pgRestoreExtraOptions:
+  ##       - '--verbose'
+  ##
+  import: {}    # ignored unless 'init.method' is set to 'initdb'
 
-  ## @param init.recovery Recover a cnpg cluster from a volume snapshot via ScheduledBackups
+  ## @param init.scheduledBackup (if `init.method: recovery`) Recover from a volume snapshot; see `backup:`
+  ## section, below, to create ScheduledBackups
+  ##
   ## Vegbank2 example:
-  ## dbName: vegbank
-  ## existingSecret: vegbankdbcreds
-  ## dbUser: vegbank
-  ## init:
-  ##   method: recovery
   ##   scheduledBackup: vegbankdb-scheduled-backup-20251107221536
   ##
+  scheduledBackup: ""   # ignored unless 'init.method' is set to 'recovery'
 
-  ## @param init.pg_basebackup Uses streaming replication to copy an existing PG instance
-  ## https://cloudnative-pg.io/documentation/1.27/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup
+  ## @param init.pg_basebackup (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance
+  ## https://cloudnative-pg.io/documentation/current/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup
+  ##
   ## ADC Metacat example:
   ##   pg_basebackup:
   ##     source: mc-arctic-pg    ## as defined in 'init.externalClusters', below
   ##
-  pg_basebackup: {}
+  pg_basebackup: {}    # ignored unless 'init.method' is set to 'pg_basebackup'
 
-  ## @param init.externalClusters external DB as a data source for import on startup
+  ## @param init.externalClusters (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup
+  ## https://cloudnative-pg.io/documentation/current/bootstrap/#the-externalclusters-section
   ## ADC Metacat example:
   ##   externalClusters:
   ##     - name: mc-arctic-pg
@@ -138,13 +146,13 @@ init:
   ##         host: metacatarctic-postgresql-hl.arctic.svc.cluster.local
   ##         user: metacat
   ##         dbname: metacat
-  externalClusters: []
+  externalClusters: []    # ignored unless 'init.method' is set to 'initdb' or 'pg_basebackup'
 
-## @section Optional PostgreSQL Configuration Parameters
+## @section Optional PostgreSQL Database Configuration Parameters
 ##
 postgresql:
   ## @param postgresql.pg_hba Client authentication pg_hba.conf
-  ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-pg_hba-section and
+  ## ref: https://cloudnative-pg.io/documentation/current/postgresql_conf/#the-pg_hba-section and
   ## https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html
   ##
   ## Example:
@@ -158,7 +166,7 @@ postgresql:
   pg_hba: []
 
   ## @param postgresql.pg_ident [default: see values.yaml] Override 'pg_ident.conf' user mappings
-  ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-pg_ident-section
+  ## ref: https://cloudnative-pg.io/documentation/current/postgresql_conf/#the-pg_ident-section
   ##      https://www.postgresql.org/docs/current/auth-username-maps.html
   ## Leaving this blank will automatically create the following mapping:
   ##
@@ -178,7 +186,7 @@ postgresql:
   pg_ident: []
 
   ## Extended configuration, appended to defaults
-  ## ref: https://cloudnative-pg.io/documentation/1.20/postgresql_conf/#the-postgresql-section
+  ## ref: https://cloudnative-pg.io/documentation/current/postgresql_conf/#the-postgresql-section
   ##
   parameters:
     ## @param postgresql.parameters.max_connections override PG default 200 max DB connections.
@@ -193,27 +201,31 @@ postgresql:
     ##
     shared_buffers: 128MB
 
-## If replica mode is enabled, this cluster will be a replica of an existing cluster. Replica
-## cluster can be created via streaming through pg_basebackup - see:
-## https://cloudnative-pg.io/documentation/current/replica_cluster/
+## @param replica Set up streaming replication to make this a replica of an existing cluster.
+## The cluster can initially be created using one of the 'init' methods, above.  After creation,
+## this 'replica' section can then be used to enable streaming replication, thus keeping the cluster
+## in replica mode - see:
+## https://cloudnative-pg.io/documentation/current/replica_cluster/#setting-up-a-replica-cluster
 ##
+## Example:
 ## replica:
-##   enabled: false
+##   enabled: true
 ##   source: "source-db"    # must be defined in 'init.externalClusters'
+##
 replica: {}
   
 ## Add backup capability to all clusters
-## https://cloudnative-pg.io/documentation/1.27/backup/
+## https://cloudnative-pg.io/documentation/current/backup/
 ##
 backup:
   ## @param backup.enabled If backups are enabled, configure the method with the default values below
   enabled: false
   ## If enabled, configure the backup method to use k8s VolumeSnapshots as a default
-  ## https://cloudnative-pg.io/documentation/1.27/appendixes/backup_volumesnapshot/
+  ## https://cloudnative-pg.io/documentation/current/appendixes/backup_volumesnapshot/
   ##
   volumeSnapshot:
     ## @param backup.volumeSnapshot.className VolumeSnapshotClass to be used to make backups
     ##
     className: csi-cephfsplugin-snapclass
-  ## @param backup.schedule Frequency to create snapshots, use the six-term cron schedule specification: https://cloudnative-pg.io/documentation/1.20/backup/
+  ## @param backup.schedule Frequency to create snapshots, use the six-term cron schedule specification: https://cloudnative-pg.io/documentation/current/backup/
   schedule: "0 0 21 * * *" # 9PM UTC Daily

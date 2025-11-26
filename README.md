@@ -3,7 +3,7 @@
 - **Authors**: Brooke, Matthew (https://orcid.org/0000-0002-1472-913X)
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
 - [Package source code on GitHub](https://github.com/DataONEorg/dataone-cnpg)
-- [**Submit Bugs and feature requests**](https://github.com/DataONEorg/reponame/issues)
+- [**Submit Bugs and feature requests**](https://github.com/DataONEorg/dataone-cnpg/issues)
 - Contact us: support@dataone.org
 - [DataONE discussions](https://github.com/DataONEorg/dataone/discussions)
 
@@ -45,7 +45,7 @@ Examples of values overrides can be found in the [examples directory](./examples
 Leaving the value `existingSecret` blank will automatically create a K8s Secret containing the username defined in `dbUser`, along with a secure, generated password. You can then point your application to that Secret to retrieve the credentials. The name of the Secret will be `<releasename>-cnpg-app`.
 
 Alternatively, you can set `existingSecret` to the name of a Secret that you created yourself. In that case, please note the following important requirements:
-- the secret must be of type [`kubernetes.io/basic-auth`](https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret) 
+- the secret must be of type [`kubernetes.io/basic-auth`](https://kubernetes.io/docs/concepts/configuration/secret/#basic-authentication-secret)
 - It must contain the exact key names: `username` and `password`
 - the username must match the value of `dbUser`
 
@@ -65,51 +65,22 @@ During the installation of the `cnpg` chart with this option enabled, an immedia
 $ kubectl get backups -n vegbank-dev
 
 NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
-vegbankdb-scheduled-backup-20251113210000   4d1h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251114210000   3d1h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251115210000   2d1h   vegbankdb-cnpg   volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251116210000   25h    vegbankdb-cnpg   volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251115210000   2d1h   vegbankdb-cnpg   volumeSnapshot   completed
+vegbankdb-scheduled-backup-20251116210000   25h    vegbankdb-cnpg   volumeSnapshot   completed
 vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapshot   completed
-yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed 
+yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed
 ```
 
 ### Recovering from a Scheduled Backup
 
-To recover from a volume snapshot via `ScheduledBackup`s, first find the backup you want to restore to. You can do this by executing the following command:
-
-```sh
-$ kubectl get backups
-NAME                                               AGE     CLUSTER                 METHOD           PHASE       ERROR
-vegbankdb-scheduled-backup-20251107221536          18d     vegbankdb-cnpg          volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251108210000          17d     vegbankdb-cnpg          volumeSnapshot   completed   
-...  
-vegbankdb-scheduled-backup-20251124210000          30h     vegbankdb-cnpg          volumeSnapshot   completed   
-vegbankdb-scheduled-backup-20251125210000          6h48m   vegbankdb-cnpg          volumeSnapshot   completed
-```
-
-Once you've decided on your snapshot, create a new configuration file and set your `init` method to `recovery`, and add a configuration field `scheduledBackup` option with your desired backup value. Note, our cnpg template also expects the following configuration fields to be populated in the example below:
-
-```
-# values-cnpg-recovery.yaml
-
-dbName: vegbank # Required
-existingSecret: vegbankdbcreds # Required
-dbUser: vegbank # Required
-
-init:
-  method: recovery # Required
-  scheduledBackup: vegbankdb-scheduled-backup-20251107221536 # Required
-
-...
-
-```
+See the section on [Importing Data - From a Volume Snapshot](#3-from-a-volume-snapshot-created-by-a-scheduled-backup) below.
 
 
 ## Importing Data
 
 Data can be imported from other PostgreSQL databases. The scenarios supported by this chart are:
 
-### 1. Automated `pg_dump` and `pg_restore` import (works with mis-matched major versions) 
+### 1. Automated `pg_dump` and `pg_restore` import (works with mis-matched major versions)
 
 > Summary:
 > - imports a database from an existing PostgreSQL cluster, even if located outside Kubernetes
@@ -118,7 +89,7 @@ Data can be imported from other PostgreSQL databases. The scenarios supported by
 > - See the [DataONE Kubernetes Cluster documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/postgres/postgres.md#migrating-from-an-existing-database) for more details.
 
   - Example configuration (for `metadig`):
-    
+
     ```yaml
     init:
       import:
@@ -146,12 +117,12 @@ Steps:
 
    ```
    # Run this through your command line
-   $ '/Location/of/dataone-cnpg/migration-source-prep.sh' -p [POD_NAME] -u [USER_NAME] 
+   $ '/Location/of/dataone-cnpg/migration-source-prep.sh' -p [POD_NAME] -u [USER_NAME]
    ```
 
 2. Create a Secret, holding the database username & password. IMPORTANT: the secret must be of type 'kubernetes.io/basic-auth', and must contain the exact key names: `username` and `password`.
 3. **Prepare the target (CNPG)** - BEFORE INSTALLING CNPG, ensure the following are set correctly in your values overrides (see metacat examples in [examples/values-overrides-metacat-dev.yaml](./examples/values-overrides-metacat-dev.yaml)):
-   - `init.method: pg_basebackup`, `init.pg_basebackup`, `init.externalClusters`, and `replica` 
+   - `init.method: pg_basebackup`, `init.pg_basebackup`, `init.externalClusters`, and `replica`
    - Ensure `postgresql.parameters.max_wal_senders` matches `max_wal_senders` on the source (see script output from step 1, above)
 4. `helm install` the cnpg chart. E.g:
    ```shell
@@ -173,7 +144,7 @@ Steps:
 > [!NOTE]
 > The remaining pods will NOT start up yet; there will be only one instance in the CNPG cluster at this point. The pod that's trying to start the second instance will show this error in the logs: `FATAL: role "streaming_replica" does not exist (SQLSTATE 28000)`. This is expected, since CNPG won't create the `"streaming_replica"` user until it exits continuous recovery mode and becomes a primary cluster, completely detached from the original source (see step 7).
 
-6. Replication should now be working from your source postgres pod to the primary cnpg cluster instance. You can check the replication status by comparing the WAL LSN positions on source and target: 
+6. Replication should now be working from your source postgres pod to the primary cnpg cluster instance. You can check the replication status by comparing the WAL LSN positions on source and target:
    - Source:
      ```shell
      watch 'kubectl exec -i <source-postgres-pod> --  psql -U postgres -c "SELECT pg_current_wal_lsn();"'
@@ -196,7 +167,7 @@ Steps:
    - Restart the primary CNPG instance, **using the Kubectl CNPG plugin**, so the remaining CNPG replicas can be created and start replicating. ⚠️ **Do not simply delete the pod - it will not be recreated!**:
      ```shell
      kubectl cnpg restart <cnpg-clustername> 1
-     ``` 
+     ```
    - `helm upgrade` your application to the new chart that works with CNPG instead of Bitnami (in Read-Write mode)
 
 #### === END READ-ONLY MODE ===
@@ -212,6 +183,39 @@ Steps:
       (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
      - ensure that the two replica pods have caught up (`kubectl cnpg status`).
 
+### 3. From a Volume Snapshot (Created by a Scheduled Backup)
+
+To recover from a volume snapshot (created by a `ScheduledBackup`), first find the backup you want to restore to:
+
+```sh
+$ kubectl get backups
+NAME                                               AGE     CLUSTER                 METHOD           PHASE
+vegbankdb-scheduled-backup-20251108210000          17d     vegbankdb-cnpg          volumeSnapshot   completed
+[...]
+vegbankdb-scheduled-backup-20251124210000          30h     vegbankdb-cnpg          volumeSnapshot   completed
+vegbankdb-scheduled-backup-20251125210000          6h48m   vegbankdb-cnpg          volumeSnapshot   completed
+```
+
+Once you've decided on your snapshot, start with a copy of the values overrides file that you used to deploy the original cluster, and make the following changes:
+
+- set `init.method` to `recovery`
+- add the backup name to `init.scheduledBackup`
+
+For example:
+```
+## values-cnpg-recovery.yaml
+
+dbName: vegbank                 # Required
+existingSecret: vegbankdbcreds  # Required
+dbUser: veggie                  # Required only if different from dbName
+
+init:
+  method: recovery              # Required
+  scheduledBackup: vegbankdb-scheduled-backup-20251107221536    # Required
+
+## [...etc]
+```
+
 
 ## Development
 
@@ -219,37 +223,45 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 ## Parameters
 
-### CloudNative PG Operator Configuration Parameters
+### Cluster Configuration Parameters
 
-| Name                       | Description                                                              | Value           |
-| -------------------------- | ------------------------------------------------------------------------ | --------------- |
-| `instances`                | Number of PostgreSQL instances required in the PG cluster.               | `3`             |
-| `existingSecret`           | Provide a basic auth Secret, or leave blank to auto-create one           | `""`            |
-| `dbName`                   | The name of the database to create in the Postgres cluster.              | `test`          |
-| `dbUser`                   | DB owner/username. Leave blank to match the DB name (see `dbName`)       | `""`            |
-| `resources`                | Memory & CPU resource requests and limits for each PostgreSQL container. | `{}`            |
-| `persistence.storageClass` | StorageClass for postgres volumes                                        | `csi-cephfs-sc` |
-| `persistence.size`         | PVC Storage size request for postgres volumes                            | `1Gi`           |
+| Name             | Description                                                              | Value  |
+| ---------------- | ------------------------------------------------------------------------ | ------ |
+| `instances`      | Number of PostgreSQL instances required in the PG cluster.               | `3`    |
+| `existingSecret` | Provide a basic auth Secret, or leave blank to auto-create one           | `""`   |
+| `dbName`         | The name of the database to create in the Postgres cluster.              | `test` |
+| `dbUser`         | DB owner/username. Leave blank to match the DB name (see `dbName`)       | `""`   |
+| `resources`      | Memory & CPU resource requests and limits for each PostgreSQL container. | `{}`   |
+
+### Database File Storage Settings
+
+| Name                       | Description                                   | Value           |
+| -------------------------- | --------------------------------------------- | --------------- |
+| `persistence.storageClass` | StorageClass for postgres volumes             | `csi-cephfs-sc` |
+| `persistence.size`         | PVC Storage size request for postgres volumes | `1Gi`           |
 
 ### Options available to create a new PostgreSQL cluster
 
-| Name                    | Description                                                             | Value    |
-| ----------------------- | ----------------------------------------------------------------------- | -------- |
-| `init.method`           | Choose which bootstrapping methods to use when creating the new cluster | `initdb` |
-| `init.import`           | Import of data from external databases on startup                       | `{}`     |
-| `init.pg_basebackup`    | Uses streaming replication to copy an existing PG instance              | `{}`     |
-| `init.externalClusters` | external DB as a data source for import on startup                      | `[]`     |
+| Name                    | Description                                                                                | Value    |
+| ----------------------- | ------------------------------------------------------------------------------------------ | -------- |
+| `init.method`           | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
+| `init.import`           | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
+| `init.scheduledBackup`  | (if `init.method: recovery`) Recover from a volume snapshot; see `backup:`                 | `""`     |
+| `init.pg_basebackup`    | (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance | `{}`     |
+| `init.externalClusters` | (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup        | `[]`     |
 
-### Optional PostgreSQL Configuration Parameters
+### Optional PostgreSQL Database Configuration Parameters
 
-| Name                                    | Description                                                       | Value             |
-| --------------------------------------- | ----------------------------------------------------------------- | ----------------- |
-| `postgresql.pg_hba`                     | Client authentication pg_hba.conf                                 | `[]`              |
-| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings                            | `see values.yaml` |
-| `postgresql.parameters.max_connections` | override PG default 200 max DB connections.                       | `250`             |
-| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB)                       | `128MB`           |
-| `replica.enabled`                       | Enable replica mode                                               | `false`           |
-| `replica.source`                        | Name of the external cluster to use as the source for replication | `source-db`       |
+| Name                                    | Description                                                                                                                          | Value                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| `postgresql.pg_hba`                     | Client authentication pg_hba.conf                                                                                                    | `[]`                         |
+| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings                                                                                               | `see values.yaml`            |
+| `postgresql.parameters.max_connections` | override PG default 200 max DB connections.                                                                                          | `250`                        |
+| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB)                                                                                          | `128MB`                      |
+| `replica`                               | Set up streaming replication to make this a replica of an existing cluster.                                                          | `{}`                         |
+| `backup.enabled`                        | If backups are enabled, configure the method with the default values below                                                           | `false`                      |
+| `backup.volumeSnapshot.className`       | VolumeSnapshotClass to be used to make backups                                                                                       | `csi-cephfsplugin-snapclass` |
+| `backup.schedule`                       | Frequency to create snapshots, use the six-term cron schedule specification: https://cloudnative-pg.io/documentation/current/backup/ | `0 0 21 * * *`               |
 
 
 ## License
