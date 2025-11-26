@@ -73,6 +73,37 @@ vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapsh
 yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed 
 ```
 
+### Recovering from a Scheduled Backup
+
+To recover from a volume snapshot via `ScheduledBackup`s, first find the backup you want to restore to. You can do this by executing the following command:
+
+```sh
+$ kubectl get backups
+NAME                                               AGE     CLUSTER                 METHOD           PHASE       ERROR
+vegbankdb-scheduled-backup-20251107221536          18d     vegbankdb-cnpg          volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251108210000          17d     vegbankdb-cnpg          volumeSnapshot   completed   
+...  
+vegbankdb-scheduled-backup-20251124210000          30h     vegbankdb-cnpg          volumeSnapshot   completed   
+vegbankdb-scheduled-backup-20251125210000          6h48m   vegbankdb-cnpg          volumeSnapshot   completed
+```
+
+Once you've decided on your snapshot, create a new configuration file and set your `init` method to `recovery`, and add a configuration field `scheduledBackup` option with your desired backup value. Note, our cnpg template also expects the following configuration fields to be populated in the example below:
+
+```
+# values-cnpg-recovery.yaml
+
+dbName: vegbank # Required
+existingSecret: vegbankdbcreds # Required
+dbUser: vegbank # Required
+
+init:
+  method: recovery # Required
+  scheduledBackup: vegbankdb-scheduled-backup-20251107221536 # Required
+
+...
+
+```
+
 
 ## Importing Data
 

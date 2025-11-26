@@ -76,7 +76,7 @@ persistence:
   size: 1Gi
 
 ## @section Options available to create a new PostgreSQL cluster
-## There are primarily two ways to bootstrap a new cluster:
+## There are primarily threww ways to bootstrap a new cluster:
 ##
 ## 1. From scratch (initdb)
 ##    - Creates a new, empty database.
@@ -85,12 +85,15 @@ persistence:
 ##
 ## 2. From an existing K8s PostgreSQL cluster, either:
 ##    - by syncing directly (pg_basebackup) or
-##    - [Not yet supported by this helm chart] indirectly through a physical base backup (recovery)
+##
+## 3. From a scheduled backup
+##    - Recovers a cnpg postgres cluster using a volume snapshot via Scheduled Backups
 ##
 init:
   ## @param init.method Choose which bootstrapping methods to use when creating the new cluster
   ## - initdb: create a new, empty database, with optional import from an external DB
   ## - pg_basebackup: use streaming replication to copy an existing, binary-compatible PG instance
+  ## - recovery: recover a cluster from a scheduled backup
   ##
   method: initdb
 
@@ -107,6 +110,16 @@ init:
   ##      - '--verbose'
   ##
   import: {}
+
+  ## @param init.recovery Recover a cnpg cluster from a volume snapshot via ScheduledBackups
+  ## Vegbank2 example:
+  ## dbName: vegbank
+  ## existingSecret: vegbankdbcreds
+  ## dbUser: vegbank
+  ## init:
+  ##   method: recovery
+  ##   scheduledBackup: vegbankdb-scheduled-backup-20251107221536
+  ##
 
   ## @param init.pg_basebackup Uses streaming replication to copy an existing PG instance
   ## https://cloudnative-pg.io/documentation/1.27/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup
