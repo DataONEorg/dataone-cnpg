@@ -55,16 +55,16 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 ## Scheduled Backup
 
-The `ScheduledBackup` functionality is available for all `cnpg` installations. Note, backups are not activated by default. To enable this functionality, set `backup.enabled` to `true` in `values.yaml`
+Note, backups are not activated by default. To enable this functionality, set `backup.enabled` to `true` in `values.yaml`, and override `backup.volumeSnapshot.className` as necessary (find yours using `kubectl get VolumeSnapshotClass`).
 
-At this time, it is simplest to focus on volume snapshots for the backup and WAL files for our cnpg cluster backups so it is set as a default. To learn more about our backup philosophy, please read more [here](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups)
+CNPG leverages the Kubernetes native Volume Snapshot API for both backup and recovery operations. For Volume Snapshots to work with a CloudNativePG cluster, you need to ensure that your k8s cluster's storage class(es) support volume snapshots - [see the CNPG documentation](https://cloudnative-pg.io/documentation/current/appendixes/backup_volumesnapshot/). To learn more about our backup philosophy, see the [DataONE k8s-cluster documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
 
-During the installation of the `cnpg` chart with this option enabled, an immediate `backup` will be created. You can check backups by executing the following:
+During the installation of the `cnpg` chart with `backup.enabled: true`, a backup will be created immediately, and then scheduled backups will occur as defined by the cron expression in `backup.schedule`. You can check backups by executing the following:
 
 ```sh
 $ kubectl get backups -n vegbank-dev
 
-NAME                                        AGE     CLUSTER          METHOD           PHASE       ERROR
+NAME                                        AGE    CLUSTER          METHOD           PHASE
 vegbankdb-scheduled-backup-20251115210000   2d1h   vegbankdb-cnpg   volumeSnapshot   completed
 vegbankdb-scheduled-backup-20251116210000   25h    vegbankdb-cnpg   volumeSnapshot   completed
 vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapshot   completed
@@ -185,21 +185,21 @@ Steps:
 
 ### 3. From a Volume Snapshot (Created by a Scheduled Backup)
 
-To recover from a volume snapshot (created by a `ScheduledBackup`), first find the backup you want to restore to:
+To recover from a volume snapshot (created by a `ScheduledBackup`, for example), first find the backup you want to restore to:
 
 ```sh
 $ kubectl get backups
-NAME                                               AGE     CLUSTER                 METHOD           PHASE
-vegbankdb-scheduled-backup-20251108210000          17d     vegbankdb-cnpg          volumeSnapshot   completed
+NAME                                        AGE    CLUSTER          METHOD           PHASE
+vegbankdb-scheduled-backup-20251108210000   17d    vegbankdb-cnpg   volumeSnapshot   completed
 [...]
-vegbankdb-scheduled-backup-20251124210000          30h     vegbankdb-cnpg          volumeSnapshot   completed
-vegbankdb-scheduled-backup-20251125210000          6h48m   vegbankdb-cnpg          volumeSnapshot   completed
+vegbankdb-scheduled-backup-20251124210000   30h    vegbankdb-cnpg   volumeSnapshot   completed
+vegbankdb-scheduled-backup-20251125210000   6h48m  vegbankdb-cnpg   volumeSnapshot   completed
 ```
 
-Once you've decided on your snapshot, start with a copy of the values overrides file that you used to deploy the original cluster, and make the following changes:
+Starting with a copy of the values overrides file that you used to deploy the original cluster, make the following changes:
 
 - set `init.method` to `recovery`
-- add the backup name to `init.scheduledBackup`
+- set `init.recoverFromBackup` to the backup name chosen above
 
 For example:
 ```
@@ -211,7 +211,7 @@ dbUser: veggie                  # Required only if different from dbName
 
 init:
   method: recovery              # Required
-  scheduledBackup: vegbankdb-scheduled-backup-20251107221536    # Required
+  recoverFromBackup: vegbankdb-scheduled-backup-20251107221536    # Required
 
 ## [...etc]
 ```
@@ -242,13 +242,13 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 ### Options available to create a new PostgreSQL cluster
 
-| Name                    | Description                                                                                | Value    |
-| ----------------------- | ------------------------------------------------------------------------------------------ | -------- |
-| `init.method`           | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
-| `init.import`           | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
-| `init.scheduledBackup`  | (if `init.method: recovery`) Recover from a volume snapshot; see `backup:`                 | `""`     |
-| `init.pg_basebackup`    | (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance | `{}`     |
-| `init.externalClusters` | (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup        | `[]`     |
+| Name                     | Description                                                                                | Value    |
+| ------------------------ | ------------------------------------------------------------------------------------------ | -------- |
+| `init.method`            | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
+| `init.import`            | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
+| `init.recoverFromBackup` | (if `init.method: recovery`) Recover from a volume snapshot; see `backup:`                 | `""`     |
+| `init.pg_basebackup`     | (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance | `{}`     |
+| `init.externalClusters`  | (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup        | `[]`     |
 
 ### Optional PostgreSQL Database Configuration Parameters
 

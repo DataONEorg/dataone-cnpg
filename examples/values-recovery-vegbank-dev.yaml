@@ -6,7 +6,7 @@ dbUser: vegbank
 
 init:
   method: recovery
-  scheduledBackup: vegbankdb-scheduled-backup-20251107221536
+  recoverFromBackup: vegbankdb-scheduled-backup-20251107221536
 
 resources:
   requests:

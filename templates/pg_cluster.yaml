@@ -32,7 +32,7 @@ spec:
     {{- if eq .Values.init.method "recovery" }}
     recovery:
       backup:
-        name: {{ .Values.init.scheduledBackup }}
+        name: {{ .Values.init.recoverFromBackup }}
       database: {{ .Values.dbName }}
       owner: {{ .Values.dbUser }}
       secret:
