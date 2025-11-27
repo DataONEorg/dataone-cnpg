@@ -1,6 +1,6 @@
 ## DataONE CloudNative PG -- PostgreSQL Cluster Deployment
 
-- **Authors**: Brooke, Matthew (https://orcid.org/0000-0002-1472-913X)
+- **Authors**: Matthew Brooke (https://orcid.org/0000-0002-1472-913X); Dou Mok (https://orcid.org/0000-0002-6076-8092); Matthew B. Jones (https://orcid.org/0000-0003-0077-4738)
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
 - [Package source code on GitHub](https://github.com/DataONEorg/dataone-cnpg)
 - [**Submit Bugs and feature requests**](https://github.com/DataONEorg/dataone-cnpg/issues)
