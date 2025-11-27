@@ -21,6 +21,22 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 >      ```
 > 2. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Secrets & Credentials](#secrets--credentials)
+- [Scheduled Backup](#scheduled-backup)
+  - [Recovering from a Scheduled Backup](#recovering-from-a-scheduled-backup)
+  - [Importing Data](#importing-data)
+    - [1. Import (works with mis-matched major versions)](#1-automated-pg_dump-and-pg_restore-import-works-with-mis-matched-major-versions)
+    - [2. Streaming Replication (same major versions)](#2-streaming-replication-same-major-versions)
+    - [3. From a Volume Snapshot (Created by a Scheduled Backup)](#3-from-a-volume-snapshot-created-by-a-scheduled-backup)
+- [Development](#development)
+- [Parameters for Customization](#parameters)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
 
 ## Prerequisites
 
@@ -246,22 +262,27 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 | ------------------------ | ------------------------------------------------------------------------------------------ | -------- |
 | `init.method`            | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
 | `init.import`            | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
-| `init.recoverFromBackup` | (if `init.method: recovery`) Recover from a volume snapshot; see `backup:`                 | `""`     |
+| `init.recoverFromBackup` | (if `init.method: recovery`) Recover from a volume snapshot; see `backup.*`                | `""`     |
 | `init.pg_basebackup`     | (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance | `{}`     |
 | `init.externalClusters`  | (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup        | `[]`     |
 
 ### Optional PostgreSQL Database Configuration Parameters
 
-| Name                                    | Description                                                                                                                          | Value                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
-| `postgresql.pg_hba`                     | Client authentication pg_hba.conf                                                                                                    | `[]`                         |
-| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings                                                                                               | `see values.yaml`            |
-| `postgresql.parameters.max_connections` | override PG default 200 max DB connections.                                                                                          | `250`                        |
-| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB)                                                                                          | `128MB`                      |
-| `replica`                               | Set up streaming replication to make this a replica of an existing cluster.                                                          | `{}`                         |
-| `backup.enabled`                        | If backups are enabled, configure the method with the default values below                                                           | `false`                      |
-| `backup.volumeSnapshot.className`       | VolumeSnapshotClass to be used to make backups                                                                                       | `csi-cephfsplugin-snapclass` |
-| `backup.schedule`                       | Frequency to create snapshots, use the six-term cron schedule specification: https://cloudnative-pg.io/documentation/current/backup/ | `0 0 21 * * *`               |
+| Name                                    | Description                                                                 | Value             |
+| --------------------------------------- | --------------------------------------------------------------------------- | ----------------- |
+| `postgresql.pg_hba`                     | Client authentication pg_hba.conf                                           | `[]`              |
+| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings                                      | `see values.yaml` |
+| `postgresql.parameters.max_connections` | override PG default 200 max DB connections.                                 | `250`             |
+| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB)                                 | `128MB`           |
+| `replica`                               | Set up streaming replication to make this a replica of an existing cluster. | `{}`              |
+
+### Database Backups
+
+| Name                              | Description                                                                | Value                        |
+| --------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
+| `backup.enabled`                  | If backups are enabled, configure the method with the values in `backup.*` | `false`                      |
+| `backup.volumeSnapshot.className` | VolumeSnapshotClass to be used to make backups                             | `csi-cephfsplugin-snapclass` |
+| `backup.schedule`                 | six-term cron schedule for creating snapshots                              | `0 0 21 * * *`               |
 
 
 ## License

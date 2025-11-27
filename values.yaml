@@ -232,7 +232,7 @@ backup:
     ## Find your available storage driver's
     ##
     className: csi-cephfsplugin-snapclass
-  ## @param backup.schedule Schedule for creating snapshots
+  ## @param backup.schedule six-term cron schedule for creating snapshots
   ## Uses the six-term cron schedule specification, which is different from standard cron, since
   ## it includes a seconds field as the first entry.
   ## see: https://cloudnative-pg.io/documentation/current/backup/#cron-schedule
