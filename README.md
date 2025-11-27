@@ -34,6 +34,12 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
     - [3. From a Volume Snapshot (Created by a Scheduled Backup)](#3-from-a-volume-snapshot-created-by-a-scheduled-backup)
 - [Development](#development)
 - [Parameters for Customization](#parameters)
+  - [Cluster Configuration Parameters](#cluster-configuration-parameters)
+  - [Database File Storage Settings](#database-file-storage-settings)
+  - [Options available to create a new PostgreSQL cluster](#options-available-to-create-a-new-postgresql-cluster)
+  - [Optional PostgreSQL Database Configuration Parameters](#optional-postgresql-database-configuration-parameters)
+  - [Realtime Streaming Replication](#realtime-streaming-replication)
+  - [Database Backups](#database-backups)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
 
@@ -268,13 +274,18 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 ### Optional PostgreSQL Database Configuration Parameters
 
-| Name                                    | Description                                                                 | Value             |
-| --------------------------------------- | --------------------------------------------------------------------------- | ----------------- |
-| `postgresql.pg_hba`                     | Client authentication pg_hba.conf                                           | `[]`              |
-| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings                                      | `see values.yaml` |
-| `postgresql.parameters.max_connections` | override PG default 200 max DB connections.                                 | `250`             |
-| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB)                                 | `128MB`           |
-| `replica`                               | Set up streaming replication to make this a replica of an existing cluster. | `{}`              |
+| Name                                    | Description                                 | Value             |
+| --------------------------------------- | ------------------------------------------- | ----------------- |
+| `postgresql.pg_hba`                     | Client authentication pg_hba.conf           | `[]`              |
+| `postgresql.pg_ident`                   | Override 'pg_ident.conf' user mappings      | `see values.yaml` |
+| `postgresql.parameters.max_connections` | override PG default 200 max DB connections. | `250`             |
+| `postgresql.parameters.shared_buffers`  | memory for caching data (PG default: 128MB) | `128MB`           |
+
+### Realtime Streaming Replication
+
+| Name      | Description                                                                 | Value |
+| --------- | --------------------------------------------------------------------------- | ----- |
+| `replica` | Set up streaming replication to make this a replica of an existing cluster. | `{}`  |
 
 ### Database Backups
 

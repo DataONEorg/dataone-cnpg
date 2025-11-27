@@ -201,7 +201,7 @@ postgresql:
     ##
     shared_buffers: 128MB
 
-## @Section Realtime Streaming Replication
+## @section Realtime Streaming Replication
 ##
 ## @param replica Set up streaming replication to make this a replica of an existing cluster.
 ## The cluster can initially be created using one of the 'init' methods, above.  After creation,
