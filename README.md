@@ -266,6 +266,7 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 | Name                     | Description                                                                                | Value    |
 | ------------------------ | ------------------------------------------------------------------------------------------ | -------- |
+| `init.enabled`           | initialize using method below, or bypass when upgrading existing clusters                  | `true`   |
 | `init.method`            | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
 | `init.import`            | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
 | `init.recoverFromBackup` | (if `init.method: recovery`) Recover from a volume snapshot; see `backup.*`                | `""`     |

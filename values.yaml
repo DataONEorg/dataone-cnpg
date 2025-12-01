@@ -96,6 +96,9 @@ persistence:
 ##      Scheduled Backups (see the 'backup:' section, below)
 ##
 init:
+  ## @param init.enabled initialize using method below, or bypass when upgrading existing clusters
+  enabled: true
+
   ## @param init.method How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)
   ## - initdb:          Create a new, empty database, with optional import from an external DB
   ## - pg_basebackup:   Use streaming replication to copy an existing, binary-compatible PG instance
@@ -236,5 +239,14 @@ backup:
   ## Uses the six-term cron schedule specification, which is different from standard cron, since
   ## it includes a seconds field as the first entry.
   ## see: https://cloudnative-pg.io/documentation/current/backup/#cron-schedule
+  ##
+  ##   Field name   | Mandatory? | Allowed values  | Allowed special characters
+  ##   ----------   | ---------- | --------------  | --------------------------
+  ##   Seconds      | Yes        | 0-59            | * / , -
+  ##   Minutes      | Yes        | 0-59            | * / , -
+  ##   Hours        | Yes        | 0-23            | * / , -
+  ##   Day of month | Yes        | 1-31            | * / , - ?
+  ##   Month        | Yes        | 1-12 or JAN-DEC | * / , -
+  ##   Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
   ##
   schedule: "0 0 21 * * *"    # 9PM UTC Daily

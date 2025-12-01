@@ -12,6 +12,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   instances: {{ .Values.instances | default 3 }}
+  {{- if .Values.init.enabled }}
   bootstrap:
     {{- if eq .Values.init.method "initdb" }}
     initdb:
@@ -44,6 +45,7 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
     {{- end }}
+  {{- end }}
   {{- with .Values.replica }}
   replica:
     {{- toYaml . | nindent 4 }}
