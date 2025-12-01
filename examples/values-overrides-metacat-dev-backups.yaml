@@ -1,0 +1,45 @@
+## Example values overrides, for updating a pre-existing Metacat database on the NCEAS k8s cluster
+## (without initializing it again), and enabling volumeSnapshot backups on a cron schedule.
+##
+## Typically, you would keep these overrides alongside your application's environment-specific
+## values-overrides yaml file, so they are versioned together with your application.
+##
+## How to upgrade a cluster with this example file:
+##
+## $ helm upgrade <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version> \
+##                              -f ./examples/values-overrides-metacat-dev.yaml
+
+dbName: metacat
+#dbUser: defaults to dbName if blank
+
+resources:
+  requests:
+    cpu: 1
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+persistence:
+  size: 10Gi
+
+init:
+  enabled: false
+
+postgresql:
+  parameters:
+    max_wal_senders: 16
+
+  ## metacat override to allow password auth:
+  pg_hba:
+    # TYPE        DATABASE      USER          ADDRESS         METHOD
+    - host        metacat       metacat       0.0.0.0/0       password
+    - host        metacat       metacat       ::0/0           password
+    - host        all           postgres      0.0.0.0/0       password
+    - host        all           postgres      ::0/0           password
+
+backup:
+  enabled: true
+  volumeSnapshot:
+    className: csi-cephfsplugin-snapclass
+  schedule: "0 45 18 1 * *"    # 18:45 UTC on 1st day of each month
