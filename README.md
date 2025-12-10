@@ -19,7 +19,7 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 >      release=<your_release_name>
 >      kubectl get secret -o yaml ${release}-cnpg-app > ${release}-cnpg-app-secrets.yaml
 >      ```
-> 2. DO NOT USE THIS AS A HELM SUB-CHART, for the reasons above. It is better to `helm install` it with its own release, separate from your main application.
+> 2. DO NOT USE THIS AS A HELM SUB-CHART, for the reasons above. It is better to `helm install` it with its own release name, separate from your main application.
 > 3. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
 
 ## Table of Contents
