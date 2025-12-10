@@ -14,12 +14,13 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 > [!CAUTION]
 > 1. DO NOT `helm uninstall` or `helm delete` this chart, unless you **_really_** need to! Doing so will result in the following:
 >    * **the dynamically provisioned PVCs will be deleted!** (You won't lose the PVs or the data, but re-binding new PVCs to the existing data is non-trivial.)
->    * (if you chose not to provide your own secret) **the secret containing the auto-generated password will be deleted**. Make sure you save the password somewhere safe before you uninstall/delete the chart:
+>    * **the secret containing the auto-generated password will be deleted** (if you chose not to provide your own secret). Make sure you save the password somewhere safe before you uninstall/delete the chart:
 >      ```shell
 >      release=<your_release_name>
 >      kubectl get secret -o yaml ${release}-cnpg-app > ${release}-cnpg-app-secrets.yaml
 >      ```
-> 2. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
+> 2. DO NOT USE THIS AS A HELM SUB-CHART, for the reasons above. It is better to `helm install` it with its own release, separate from your main application.
+> 3. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
 
 ## Table of Contents
 
