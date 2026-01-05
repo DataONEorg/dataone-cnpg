@@ -11,6 +11,9 @@ metadata:
   name: {{ .Release.Name }}-cnpg
   namespace: {{ .Release.Namespace }}
 spec:
+  {{- if .Values.postgresql.cnpgImageOverideEnabled }}
+  imageName: {{ .Values.postgresql.cnpgImageSpec }}
+  {{- end }}
   instances: {{ .Values.instances | default 3 }}
   {{- if .Values.init.enabled }}
   bootstrap:
