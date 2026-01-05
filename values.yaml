@@ -154,7 +154,7 @@ init:
 ## @section Optional PostgreSQL Database Configuration Parameters
 ##
 postgresql:
-  cnpgImageOverideEnabled: false
+  cnpgImageOverrideEnabled: false
   ## @param postgresql.cnpgImageSpec Adjust this value to your desired postgres version
   ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
   cnpgImageSpec: ""
