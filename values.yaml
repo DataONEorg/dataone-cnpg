@@ -154,9 +154,11 @@ init:
 ## @section Optional PostgreSQL Database Configuration Parameters
 ##
 postgresql:
+  ## @param postgresql.cnpgImageOverrideEnabled Set to true to override cnpg default postgres image
   cnpgImageOverrideEnabled: false
   ## @param postgresql.cnpgImageSpec Adjust this value to your desired postgres version
   ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
+  ## Example: ghcr.io/cloudnative-pg/postgresql:18
   cnpgImageSpec: ""
 
   ## @param postgresql.pg_hba Client authentication pg_hba.conf
