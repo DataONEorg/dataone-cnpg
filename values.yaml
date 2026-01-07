@@ -11,6 +11,19 @@
 ## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f </path/to/your/values-overrides.yaml>
 
+## @section Postgres Image Parameters
+## Use this section to specify which postgres image the cnpg cluster should be deploying
+
+image:
+  ## @param postgresImageOverrideEnabled Set to true to override cnpg default postgres image
+  ##
+  enabled: false
+  ## @param postgresImageSpec Adjust this value to your desired postgres version
+  ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
+  ## Example: ghcr.io/cloudnative-pg/postgresql:18
+  ##
+  postgresImageSpec: ""
+
 ## @section Cluster Configuration Parameters
 
 ## @param instances Number of PostgreSQL instances required in the PG cluster.
@@ -154,13 +167,6 @@ init:
 ## @section Optional PostgreSQL Database Configuration Parameters
 ##
 postgresql:
-  ## @param postgresql.cnpgImageOverrideEnabled Set to true to override cnpg default postgres image
-  cnpgImageOverrideEnabled: false
-  ## @param postgresql.cnpgImageSpec Adjust this value to your desired postgres version
-  ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
-  ## Example: ghcr.io/cloudnative-pg/postgresql:18
-  cnpgImageSpec: ""
-
   ## @param postgresql.pg_hba Client authentication pg_hba.conf
   ## ref: https://cloudnative-pg.io/documentation/current/postgresql_conf/#the-pg_hba-section and
   ## https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html
