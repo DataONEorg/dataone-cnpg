@@ -75,6 +75,15 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 > [!CAUTION]
 > Make sure you have provided the correct credentials in the secret, along with `dbUser` and `dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
+## Postgres Image Version
+
+It is possible to specify a postgres version to deploy with cnpg. To do so, set `image.enabled` to `true`, and add/select your desired postgres to `image.postgresImageSpec`. Please see below for an example:
+
+```yaml
+image:
+  enabled: true
+  postgresImageSpec: ghcr.io/cloudnative-pg/postgresql:18
+```
 
 ## Scheduled Backup
 
