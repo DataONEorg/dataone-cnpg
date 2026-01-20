@@ -77,13 +77,12 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 ## Postgres Image Version
 
-It is possible to specify a postgres version to deploy with cnpg. To do so, set `image.enabled` to `true`, and add/select your desired postgres to `image.postgresImageSpec`. Please see below for an example:
+It is possible to specify a postgres version to deploy with `cnpg`. To do so, set `Values.imageOverrideSpec` to your desired postgres version. Please see below for an example:
 
 ```yaml
-image:
-  enabled: true
-  postgresImageSpec: ghcr.io/cloudnative-pg/postgresql:18
+imageOverrideSpec: "ghcr.io/cloudnative-pg/postgresql:18"
 ```
+- Note: If you leave this value empty, `cnpg` will default to the initial operator install/setup.
 
 ## Scheduled Backup
 
