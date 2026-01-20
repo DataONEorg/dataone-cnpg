@@ -77,7 +77,7 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 ## Postgres Image Version
 
-It is possible to specify a postgres version to deploy with `cnpg`. To do so, set `Values.imageOverrideSpec` to your desired postgres version. Please see below for an example:
+We recommend allowing the CNPG Operator to manage Postgres minor-version upgrades automatically. However, if there is a need to override this functionality and specify a postgres version manually, add the following section to your yaml config file:
 
 ```yaml
 imageOverrideSpec: "ghcr.io/cloudnative-pg/postgresql:18"
