@@ -11,6 +11,15 @@
 ## $ helm install <releasename> oci:////ghcr.io/dataoneorg/charts/cnpg --version <version> \
 ##                              -f </path/to/your/values-overrides.yaml>
 
+## @section Postgres Image Parameters
+## Use this section to specify which postgres image the cnpg cluster should be deploying
+
+## @param postgresImageSpec Adjust this value to your desired postgres version
+## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
+## Example: ghcr.io/cloudnative-pg/postgresql:18
+##
+imageOverrideSpec: "ghcr.io/cloudnative-pg/postgresql:18"
+
 ## @section Cluster Configuration Parameters
 
 ## @param instances Number of PostgreSQL instances required in the PG cluster.

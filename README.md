@@ -75,6 +75,14 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 > [!CAUTION]
 > Make sure you have provided the correct credentials in the secret, along with `dbUser` and `dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
+## Postgres Image Version
+
+We recommend allowing the CNPG Operator to manage Postgres minor-version upgrades automatically. However, if there is a need to override this functionality and specify a postgres version manually, add the following section to your yaml config file:
+
+```yaml
+imageOverrideSpec: "ghcr.io/cloudnative-pg/postgresql:18"
+```
+- Note: If you leave this value empty, `cnpg` will default to the initial operator install/setup.
 
 ## Scheduled Backup
 
