@@ -7,7 +7,7 @@
 ## How to upgrade a cluster with this example file:
 ##
 ## $ helm upgrade <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version> \
-##                              -f ./examples/values-overrides-metacat-dev.yaml
+##                              -f ./examples/values-overrides-metacat-dev-backups.yaml
 
 dbName: metacat
 #dbUser: defaults to dbName if blank
@@ -21,7 +21,7 @@ resources:
     memory: 1Gi
 
 persistence:
-  size: 10Gi
+  size: 12Gi
 
 init:
   enabled: false
