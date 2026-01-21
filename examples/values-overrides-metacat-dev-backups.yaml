@@ -21,7 +21,7 @@ resources:
     memory: 1Gi
 
 persistence:
-  size: 12Gi
+  size: 20Gi
 
 init:
   enabled: false
