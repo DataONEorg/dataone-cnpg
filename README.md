@@ -27,6 +27,7 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Secrets & Credentials](#secrets--credentials)
+- [Postgres Image Version](#postgres-image-version)
 - [Scheduled Backup](#scheduled-backup)
   - [Recovering from a Scheduled Backup](#recovering-from-a-scheduled-backup)
 - [Importing Data](#importing-data)
