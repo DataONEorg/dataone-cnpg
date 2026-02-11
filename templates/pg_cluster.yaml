@@ -80,6 +80,8 @@ spec:
     storageClass: {{ .Values.persistence.storageClass }}
     size: {{ .Values.persistence.size }}
   {{- with .Values.backup }}
+  {{- if .enabled }}
   backup:
-    {{- toYaml . | nindent 4 }}
+    {{- omit . "enabled" | toYaml | nindent 4 }}
+  {{- end }}
   {{- end }}
