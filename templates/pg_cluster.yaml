@@ -82,6 +82,6 @@ spec:
   {{- with .Values.backup }}
   {{- if .enabled }}
   backup:
-    {{- omit . "enabled" | toYaml | nindent 4 }}
+    {{- omit . "enabled" "schedule" | toYaml | nindent 4 }}
   {{- end }}
   {{- end }}
