@@ -76,6 +76,21 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 > [!CAUTION]
 > Make sure you have provided the correct credentials in the secret, along with `dbUser` and `dbName`, BEFORE you create the cluster. Changing these values, and doing a `helm upgrade` after the cluster has been created, will NOT update those values in the existing Postgres database!
 
+> [!TIP]
+> If you see cnpg log errors containing:
+> ```
+> "error_severity":"ERROR","sql_state_code":"42704","message":"role \"app\" does not exist",
+>     "query":"ALTER ROLE \"app\" WITH PASSWORD...etc`
+> ```
+> ...do this in psql:
+> ```sql
+> \du
+> -- then check the role 'app' is not listed. If not...
+> CREATE ROLE "app";
+> -- and to be kind to your future self:
+> COMMENT ON ROLE "app" IS 'Dummy role, not used, but needed to stop CNPG errors in log';
+> ```
+
 ## Postgres Image Version
 
 We recommend allowing the CNPG Operator to manage Postgres minor-version upgrades automatically. However, if there is a need to override this functionality and specify a postgres version manually, add the following section to your yaml config file:
