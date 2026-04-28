@@ -230,9 +230,12 @@ Steps:
       (⚠️ NOTE: Check the cnpg log for errors - you may need to repeat this collation version mismatch fix for the `postgres` database. too)
      - ensure that the two replica pods have caught up (`kubectl cnpg status`).
 
-### 3. From a Volume Snapshot (Created by a Scheduled Backup)
+### 3. From a CNPG Backup Object in the Same Namespace
 
-To recover from a volume snapshot (created by a `ScheduledBackup`, for example), first find the backup you want to restore to:
+> [!NOTE]
+> This works only if the Backup snapshot is in the same namespace as the target cluster! To recover from a backup in a different namespace, see [4. From a VolumeSnapshot in a Different Namespace](#4-from-a-volumesnapshot-in-a-different-namespace), below.
+
+A CNPG Backup (created by a `ScheduledBackup`, for example), points to a `VolumeSnapshot`. To recover from a backup, first find the one you want to use:
 
 ```sh
 $ kubectl get backups
@@ -263,12 +266,88 @@ init:
 ## [...etc]
 ```
 
+### 4. From a VolumeSnapshot in a Different Namespace
+
+To recover from a backup in a different namespace, you will need to create a new `VolumeSnapshot` in the same namespace as the target cluster, that points to the same `VolumeSnapshotContent` as the original backup.
+
+**(This example uses a backup from the prod-goa context)**
+
+1. find the snapshot name:
+
+    ```shell
+    $ kc get --context=prod-k8s backup -n goa mcdbgoa-scheduled-backup-20260401110000 \
+             -ojsonpath='{.status.snapshotBackupStatus.elements[0].name}'
+    mcdbgoa-scheduled-backup-20260401110000
+    ````
+
+2. Use that name to get the VolumeSnapshot Content name it points to:
+
+    ```shell
+    $ kc get --context=prod-k8s volumesnapshot -n goa mcdbgoa-scheduled-backup-20260401110000 \
+             -o jsonpath='{.status.boundVolumeSnapshotContentName}'
+    snapcontent-2e245136-0eef-44e6-a04d-f51ab0f597f8
+    ```
+
+3. Get the snapshotHandle from the VolumeSnapshotContent:
+
+    ```shell
+    $ kc get --context=prod-k8s volumesnapshotcontents \
+             snapcontent-2e245136-0eef-44e6-a04d-f51ab0f597f8 -ojsonpath='{.status.snapshotHandle}'
+    0001-0024-8aa4d4a0-a209-11ea-baf5-ffc787bfc812-0000000000000001-d9845874-9fe7-4958-8c6e-c270b6fd782a
+    ```
+
+4. Create a new VolumeSnapshotContent object that points to this same handle:
+
+    - Make new file 'static-content.yaml'
+
+      ```yaml
+      apiVersion: snapshot.storage.k8s.io/v1
+      kind: VolumeSnapshotContent
+      metadata:
+        name: mcdbgoa-static-content
+      spec:
+        deletionPolicy: Retain
+        driver: cephfs.csi.ceph.com
+        source:
+          # from original volumesnapshotcontents object
+          snapshotHandle: 0001-0024-8aa4d4a0-a209-11ea-baf5-ffc787bfc812-0000000000000001-d9845874-9fe7-4958-8c6e-c270b6fd782a
+        volumeSnapshotRef:
+          name: mcdbgoa-recovered-snapshot
+          namespace: demo
+      ```
+   - then: `kc apply -f static-content.yaml`
+
+5. Create a VolumeSnapshot object that points to this content:
+
+    - Make new file 'static-snapshot.yaml'
+
+      ```yaml
+      apiVersion: snapshot.storage.k8s.io/v1
+      kind: VolumeSnapshot
+      metadata:
+        name: mcdbgoa-recovered-snapshot
+        namespace: demo
+      spec:
+        source:
+          volumeSnapshotContentName: mcdbgoa-static-content  # from static-content.yaml, above
+      ```
+
+   - `kc apply -f static-snapshot.yaml`
+
+6. Finally, use this VolumeSnapshot name in the cnpg chart as a `snapshot_recovery` source (`init.recoverFromSnapshot`).
+
 
 ## Development
 
 The intent of this helm chart is to provide as lightweight a wrapper as possible, keeping configuration to a minimum. There are many parameters that can be set ([see the CNPG API documentation](https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/)), but the following should provide sufficient flexibility for most use cases. If you need to add more parameters to the values.yaml file, please limit changes as much as possible, in the interest of simplicity. After adding values and their associated documentation, regenerate the parameters table below, using the [Bitnami Readme Generator for Helm](https://github.com/bitnami/readme-generator-for-helm).
 
 ## Parameters
+
+### Postgres Image Parameters
+
+| Name                | Description                                        | Value |
+| ------------------- | -------------------------------------------------- | ----- |
+| `imageOverrideSpec` | Adjust this value to your desired postgres version | `""`  |
 
 ### Cluster Configuration Parameters
 
@@ -289,14 +368,15 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 ### Options available to create a new PostgreSQL cluster
 
-| Name                     | Description                                                                                | Value    |
-| ------------------------ | ------------------------------------------------------------------------------------------ | -------- |
-| `init.enabled`           | initialize using method below, or bypass when upgrading existing clusters                  | `true`   |
-| `init.method`            | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
-| `init.import`            | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
-| `init.recoverFromBackup` | (if `init.method: recovery`) Recover from a volume snapshot; see `backup.*`                | `""`     |
-| `init.pg_basebackup`     | (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance | `{}`     |
-| `init.externalClusters`  | (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup        | `[]`     |
+| Name                       | Description                                                                                | Value    |
+| -------------------------- | ------------------------------------------------------------------------------------------ | -------- |
+| `init.enabled`             | initialize using method below, or bypass when upgrading existing clusters                  | `true`   |
+| `init.method`              | How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)                  | `initdb` |
+| `init.import`              | (if `init.method: initdb`) Import of data from external databases on startup               | `{}`     |
+| `init.recoverFromBackup`   | (if `init.method: recovery`) Recover from CNPG backup in same namespace                    | `""`     |
+| `init.recoverFromSnapshot` | (if `init.method: snapshot_recovery`) Recover from VolumeSnapshot                          | `""`     |
+| `init.pg_basebackup`       | (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance | `{}`     |
+| `init.externalClusters`    | (if `init.method: initdb` or `pg_basebackup`) External datasource to use on startup        | `[]`     |
 
 ### Optional PostgreSQL Database Configuration Parameters
 

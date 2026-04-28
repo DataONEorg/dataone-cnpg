@@ -14,7 +14,7 @@
 ## @section Postgres Image Parameters
 ## Use this section to specify which postgres image the cnpg cluster should be deploying
 
-## @param postgresImageSpec Adjust this value to your desired postgres version
+## @param imageOverrideSpec Adjust this value to your desired postgres version
 ## To see available versions, see: https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
 ## Example: ghcr.io/cloudnative-pg/postgresql:18
 ##
@@ -111,7 +111,8 @@ init:
   ## @param init.method How to initialize the new cluster (`initdb`, `pg_basebackup`, `recovery`)
   ## - initdb:          Create a new, empty database, with optional import from an external DB
   ## - pg_basebackup:   Use streaming replication to copy an existing, binary-compatible PG instance
-  ## - recovery:        Recover a cluster from a scheduled backup
+  ## - recovery:        Recover a cluster from a scheduled backup IN THE SAME NAMESPACE
+  ## - snapshot_recovery:  Recover a cluster from a VolumeSnapshot (not namespace-specific)
   ##
   method: initdb
 
@@ -131,13 +132,19 @@ init:
   ##
   import: {}    # ignored unless 'init.method' is set to 'initdb'
 
-  ## @param init.recoverFromBackup (if `init.method: recovery`) Recover from a volume snapshot; see `backup.*`
-  ## section, below, to create ScheduledBackups
-  ##
-  ## Vegbank2 example:
+  ## @param init.recoverFromBackup (if `init.method: recovery`) Recover from CNPG backup in same namespace
+  ## See `backup.*` section, below, to create ScheduledBackups. Each ScheduledBackup creates a
+  ## backups.postgresql.cnpg.io, which can then be used here to recover a cluster in the same
+  ## namespace. e.g.
   ##   recoverFromBackup: vegbankdb-scheduled-backup-20251107221536
   ##
   recoverFromBackup: ""   # ignored unless 'init.method' is set to 'recovery'
+
+  ## @param init.recoverFromSnapshot (if `init.method: snapshot_recovery`) Recover from VolumeSnapshot
+  ## (volumesnapshots.snapshot.storage.k8s.io). Needs to be in the same namespace, but you can clone
+  ## an existing one across namespaces to make it available elsewhere.
+  ##
+  recoverFromSnapshot: ""   # ignored unless 'init.method' is set to 'snapshot_recovery'
 
   ## @param init.pg_basebackup (if `init.method: pg_basebackup`) streaming replication of an existing PostgreSQL instance
   ## https://cloudnative-pg.io/documentation/current/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup

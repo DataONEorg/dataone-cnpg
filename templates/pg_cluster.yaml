@@ -1,8 +1,9 @@
 ## Create a PostgreSQL cluster using the CloudNative-PG operator
 ## (https://github.com/cloudnative-pg/cloudnative-pg)
 ##
-{{ $validMethods := tuple "initdb" "pg_basebackup" "recovery" }}
-{{- if not (has .Values.init.method $validMethods) }}
+{{ $validMethods := tuple "initdb" "pg_basebackup" "recovery" "snapshot_recovery" }}
+{{- $initMethod := .Values.init.method | default "initdb" }}
+{{- if not (has $initMethod $validMethods) }}
 {{ required ( printf ".Values.init.method must be one of %s" $validMethods ) "" | fail }}
 {{- end }}
 apiVersion: postgresql.cnpg.io/v1
@@ -17,7 +18,7 @@ spec:
   instances: {{ .Values.instances | default 3 }}
   {{- if .Values.init.enabled }}
   bootstrap:
-    {{- if eq .Values.init.method "initdb" }}
+    {{- if eq $initMethod "initdb" }}
     initdb:
       database: {{ .Values.dbName }}
       owner: {{ .Values.dbUser }}
@@ -33,16 +34,24 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     {{- end }}
-    {{- if eq .Values.init.method "recovery" }}
+    {{- if or (eq $initMethod "recovery") (eq $initMethod "snapshot_recovery") }}
     recovery:
+      {{- if eq $initMethod "recovery" }}
       backup:
         name: {{ .Values.init.recoverFromBackup }}
+      {{- else }}
+      volumeSnapshots:
+        storage:
+          name: {{ .Values.init.recoverFromSnapshot }}
+          kind: VolumeSnapshot
+          apiGroup: snapshot.storage.k8s.io
+      {{- end }}
       database: {{ .Values.dbName }}
       owner: {{ .Values.dbUser }}
       secret:
         name: {{ .Values.existingSecret }}
     {{- end }}
-    {{- if eq .Values.init.method "pg_basebackup" }}
+    {{- if eq $initMethod "pg_basebackup" }}
     {{- with .Values.init.pg_basebackup }}
     pg_basebackup:
       {{- toYaml . | nindent 6 }}
