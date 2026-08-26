@@ -305,4 +305,4 @@ backup:
     ##   Month        | Yes        | 1-12 or JAN-DEC | * / , -
     ##   Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
     ##
-    cleanupSchedule: "* */12 * * *"  # default every 12 hours from deploy time
+    cleanupSchedule: "0 */12 * * *"  # default every 12 hours from deploy time
