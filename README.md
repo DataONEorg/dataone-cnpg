@@ -395,11 +395,14 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 
 ### Database Backups
 
-| Name                              | Description                                                                | Value                        |
-| --------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| `backup.enabled`                  | If backups are enabled, configure the method with the values in `backup.*` | `false`                      |
-| `backup.volumeSnapshot.className` | VolumeSnapshotClass to be used to make backups                             | `csi-cephfsplugin-snapclass` |
-| `backup.schedule`                 | six-term cron schedule for creating snapshots                              | `0 0 21 * * *`               |
+| Name                                           | Description                                                                | Value                        |
+| ---------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
+| `backup.enabled`                               | If backups are enabled, configure the method with the values in `backup.*` | `false`                      |
+| `backup.volumeSnapshot.className`              | VolumeSnapshotClass to be used to make backups                             | `csi-cephfsplugin-snapclass` |
+| `backup.volumeSnapshot.snapshotOwnerReference` | Set the owner of the VolumeSnapshots                                       | `backup`                     |
+| `backup.schedule`                              | six-term cron schedule for creating snapshots                              | `0 0 21 * * *`               |
+| `backup.retentionPolicy.days`                  | Maximum time to live (TTL) in days, for each backup                        | `60`                         |
+| `backup.retentionPolicy.cleanupSchedule`       | How often to find and delete expired backups                               | `* */12 * * *`               |
 
 
 ## License
