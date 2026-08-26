@@ -20,7 +20,7 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 >      kubectl get secret -o yaml ${release}-cnpg-app > ${release}-cnpg-app-secrets.yaml
 >      ```
 > 2. DO NOT USE THIS AS A HELM SUB-CHART, for the reasons above. It is better to `helm install` it with its own release name, separate from your main application.
-> 3. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in postgres.
+> 3. Changes to the database name, database owner/username, and/or the password, are non-trivial after the cluster has been created. Doing a `helm upgrade`, will NOT update the PostgreSQL database with new values for these parameters. You will need to manually update the database and/or user credentials in Postgres.
 
 ## Table of Contents
 
@@ -33,7 +33,8 @@ This Helm chart provides a simplified way of deploying a CloudNative PG (CNPG) P
 - [Importing Data](#importing-data)
   - [Import (works with mis-matched major versions)](#1-automated-pg_dump-and-pg_restore-import-works-with-mis-matched-major-versions)
   - [Streaming Replication (same major versions)](#2-streaming-replication-same-major-versions)
-  - [From a Volume Snapshot (Created by a Scheduled Backup)](#3-from-a-volume-snapshot-created-by-a-scheduled-backup)
+  - [From a `CNPG` Backup Object in the Same Namespace](#3-from-a-cnpg-backup-object-in-the-same-namespace)
+  - [From a Volume Snapshot (Created by a Scheduled Backup) in a Different Namespace](#4-from-a-volumesnapshot-in-a-different-namespace)
 - [Development](#development)
 - [Parameters for Customization](#parameters)
   - [Cluster Configuration Parameters](#cluster-configuration-parameters)
@@ -93,20 +94,25 @@ Alternatively, you can set `existingSecret` to the name of a Secret that you cre
 
 ## Postgres Image Version
 
-We recommend allowing the CNPG Operator to manage Postgres minor-version upgrades automatically. However, if there is a need to override this functionality and specify a postgres version manually, add the following section to your yaml config file:
+We recommend allowing the CNPG Operator to manage Postgres minor-version upgrades automatically. However, if there is a need to override this functionality and specify a Postgres version manually, add the following section to your YAML config file (NOT recommended):
 
 ```yaml
 imageOverrideSpec: "ghcr.io/cloudnative-pg/postgresql:18"
 ```
+
 - Note: If you leave this value empty, `cnpg` will default to the initial operator install/setup.
 
 ## Scheduled Backup
 
-Note, backups are not activated by default. To enable this functionality, set `backup.enabled` to `true` in `values.yaml`, and override `backup.volumeSnapshot.className` as necessary (find yours using `kubectl get VolumeSnapshotClass`).
+Note, backups are not activated by default. To enable this functionality, set `backup.enabled: true` in `values.yaml`, and override `backup.volumeSnapshot.className` as necessary (find yours using `kubectl get VolumeSnapshotClass`).
 
 CNPG leverages the Kubernetes native Volume Snapshot API for both backup and recovery operations. For Volume Snapshots to work with a CloudNativePG cluster, you need to ensure that your k8s cluster's storage class(es) support volume snapshots - [see the CNPG documentation](https://cloudnative-pg.io/documentation/current/appendixes/backup_volumesnapshot/). To learn more about our backup philosophy, see the [DataONE k8s-cluster documentation](https://github.com/DataONEorg/k8s-cluster/blob/main/operators/postgres/postgres.md#database-backups).
 
-During the installation of the `cnpg` chart with `backup.enabled: true`, a backup will be created immediately, and then scheduled backups will occur as defined by the cron expression in `backup.schedule`. You can check backups by executing the following:
+During the installation of the `cnpg` chart with `backup.enabled: true`, a backup will be created immediately, and then scheduled backups will occur as defined by the cron expression in `backup.schedule`.
+
+A `Backup` object (`backups.postgresql.cnpg.io`) points to a Kubernetes `VolumeSnapshot` (`volumesnapshots.snapshot.storage.k8s.io`), which in turn points to a K8s `VolumeSnapshotContent` object (`volumesnapshotcontents.snapshot.storage.k8s.io`).
+
+You can check backups by executing the following:
 
 ```sh
 $ kubectl get backups -n vegbank-dev
@@ -118,10 +124,24 @@ vegbankdb-scheduled-backup-20251117210000   77m    vegbankdb-cnpg   volumeSnapsh
 yourdb-scheduled-backup-20251117210000      1m     yourdb-cnpg      volumeSnapshot   completed
 ```
 
+The `VolumeSnapshot` will typically have the same name as the `Backup`. See the [section on Importing Data](#4-from-a-volumesnapshot-in-a-different-namespace) for details of how to find the associated `VolumeSnapshotContent` object.
+
 ### Recovering from a Scheduled Backup
 
-See the section on [Importing Data - From a Volume Snapshot](#3-from-a-volume-snapshot-created-by-a-scheduled-backup) below.
+See the section on [Importing Data - From a CNPG Backup Object in the Same Namespace](#3-from-a-cnpg-backup-object-in-the-same-namespace) below.
 
+### Backup Retention and Cleanup
+
+If scheduled backups are enabled, automatic cleanup will be enabled by default. The default schedule and retention settings for cleanup can be found in `backup.retentionPolicy.cleanupSchedule` and `backup.retentionPolicy.days`.
+
+> [!CAUTION]
+> The auto-deletion of old Backups will result in their associated `VolumeSnapshot` and `VolumeSnapshotContent` objects being deleted (i.e. the backed up data will be lost).
+> - This behavior may be disabled by one of the following solutions (but these are NOT recommended, since you will eventually run out of storage space):
+>   1. change `backup.volumeSnapshot.snapshotOwnerReference: self`, so that deleting the `Backup` will no longer delete the `VolumeSnapshot`, or
+>   2. disable cleanup altogether, by setting `backup.retentionPolicy.days: 0`.
+> - If you need to keep a specific backup for longer than the retention period, you can either:
+>   1. Create a new Backup object that points to the same VolumeSnapshot, and give it a new name (the VolumeSnapshot will not be deleted until all Backups that point to it are deleted), or
+>   2. Create a new VolumeSnapshot object that points to the same VolumeSnapshotContent, and give it a new name (the VolumeSnapshotContent will not be deleted until all VolumeSnapshots that point to it are deleted). See the [section on Importing Data](#4-from-a-volumesnapshot-in-a-different-namespace) for details.
 
 ## Importing Data
 
@@ -159,7 +179,7 @@ Data can be imported from other PostgreSQL databases. The scenarios supported by
 This approach uses `pg_basebackup` to create a PostgreSQL cluster by cloning an existing (and binary-compatible) one of the same major version, through the streaming replication protocol. See the [CloudNative PG documentation](https://cloudnative-pg.io/documentation/current/bootstrap/#bootstrap-from-a-live-cluster-pg_basebackup), and particularly **note the warnings and the Requirements section!**
 
 Steps:
-1. **Prepare the Source (Bitnami PostrgeSQL)** - Run [`scripts/migration-source-prep.sh`](scripts/migration-source-prep.sh) against the running Bitnami PostgreSQL pod. The script modifies `pg_hba.conf` to allow replication connections; creates a replication user and a physical replication slot; and sets `wal_keep_size` to 1024MB
+1. **Prepare the Source (e.g. for Bitnami PostgreSQL)** - Run [`scripts/migration-source-prep.sh`](scripts/migration-source-prep.sh) against the running Bitnami PostgreSQL pod. The script modifies `pg_hba.conf` to allow replication connections; creates a replication user and a physical replication slot; and sets `wal_keep_size` to 1024MB
    - Note: If you do not use the script file directly from cloning this repo, it may not have executable permissions. This happens when you download the script file through GitHub into your local Downloads folder.
 
    ```
@@ -176,7 +196,7 @@ Steps:
    $ helm install <releasename> oci://ghcr.io/dataoneorg/charts/cnpg --version <version> \
                               -f ./examples/values-overrides-metacat-dev.yaml
    ```
-   This creates a `<rlsname>-cnpg-1-pgbasebackup-<id>` pod to make a copy of the bitnami source, and will then start the first pod of the cluster (`<rlsname>-cnpg-1`)
+   This creates a `<rlsname>-cnpg-1-pgbasebackup-<id>` pod to make a copy of the Bitnami source, and will then start the first pod of the cluster (`<rlsname>-cnpg-1`)
 5. However, the first CNPG pod will now be in `CrashLoopBackOff` status. To resolve this, we need to edit the `postgresql.conf` file, as follows:
    - Type this command below in the terminal, but do not hit `<Enter>` yet...
       ```shell
@@ -191,7 +211,7 @@ Steps:
 > [!NOTE]
 > The remaining pods will NOT start up yet; there will be only one instance in the CNPG cluster at this point. The pod that's trying to start the second instance will show this error in the logs: `FATAL: role "streaming_replica" does not exist (SQLSTATE 28000)`. This is expected, since CNPG won't create the `"streaming_replica"` user until it exits continuous recovery mode and becomes a primary cluster, completely detached from the original source (see step 7).
 
-6. Replication should now be working from your source postgres pod to the primary cnpg cluster instance. You can check the replication status by comparing the WAL LSN positions on source and target:
+6. Replication should now be working from your source Postgres pod to the primary cnpg cluster instance. You can check the replication status by comparing the WAL LSN positions on source and target:
    - Source:
      ```shell
      watch 'kubectl exec -i <source-postgres-pod> --  psql -U postgres -c "SELECT pg_current_wal_lsn();"'
@@ -402,7 +422,7 @@ The intent of this helm chart is to provide as lightweight a wrapper as possible
 | `backup.volumeSnapshot.snapshotOwnerReference` | Set the owner of the VolumeSnapshots                                       | `backup`                     |
 | `backup.schedule`                              | six-term cron schedule for creating snapshots                              | `0 0 21 * * *`               |
 | `backup.retentionPolicy.days`                  | Maximum time to live (TTL) in days, for each backup                        | `60`                         |
-| `backup.retentionPolicy.cleanupSchedule`       | How often to find and delete expired backups                               | `* */12 * * *`               |
+| `backup.retentionPolicy.cleanupSchedule`       | How often to find and delete expired backups                               | `0 */12 * * *`               |
 
 
 ## License
