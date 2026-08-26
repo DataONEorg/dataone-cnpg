@@ -37,7 +37,7 @@ spec:
                     echo "retentionDays <= 0 => nothing to do"; exit 0
                   fi
                   ns="${NAMESPACE}"
-                  echo "Checking backups in namespace: $ns (retentionDays=$retention)"
+                  echo "$(date): Checking for backups older than $retention days"
                   kubectl get backups.postgresql.cnpg.io -n "$ns" \
                   -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.creationTimestamp}{"\n"}{end}' \
                   | while IFS=$'\t' read -r name ts; do
@@ -47,12 +47,13 @@ spec:
                       now_epoch=$(date -u +%s)
                       retention_seconds=$(( retention * 86400 ))
                       age=$(( now_epoch - creation_epoch ))
+                      ageDays=$((age / 86400)).$(( (age % 86400) * 10 / 86400 ))
                       if [ "$age" -gt "$retention_seconds" ]; then
-                        echo "Deleting Backup $name (age ${age}s > ${retention_seconds}s)"
+                        echo "* * * Deleting Backup $name (age ${ageDays} days > ${retention} days)"
                         kubectl delete backups.postgresql.cnpg.io "$name" -n "$ns" \
                             --ignore-not-found || true
                       else
-                        echo "Keeping Backup $name (age ${age}s <= ${retention_seconds}s)"
+                        echo "Keeping Backup $name (age ${ageDays} days <= ${retention} days)"
                       fi
                     done
 {{- end }}
